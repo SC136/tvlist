@@ -26,6 +26,24 @@ function run(label, script, args, env = process.env) {
   }
 }
 
+// Production deploys must be fully configured: fail fast with a clear message
+// instead of shipping a site whose login or database is broken.
+if (process.env.VERCEL_ENV === "production") {
+  const missing = [];
+  if (!process.env.DATABASE_URL) missing.push("DATABASE_URL (Neon pooled connection string)");
+  if ((process.env.BETTER_AUTH_SECRET ?? "").length < 32) missing.push("BETTER_AUTH_SECRET (random string, 32+ characters)");
+  if (missing.length) {
+    const list = missing.map((m) => `  - ${m}`).join("\n");
+    console.error(
+      `\n✖ Missing required environment variables for a production deploy:\n${list}\n` +
+        "Add them in Vercel → Project → Settings → Environment Variables, then redeploy.",
+    );
+    process.exit(1);
+  }
+  if (!process.env.TMDB_API_KEY) console.warn("\n⚠ TMDB_API_KEY is not set: the site will show only a small demo catalog.");
+  if (!process.env.CRON_SECRET) console.warn("\n⚠ CRON_SECRET is not set: the daily airing-notification job will refuse to run.");
+}
+
 const shouldMigrate = process.env.VERCEL_ENV === "production" || process.env.RUN_MIGRATIONS === "1";
 const pooled = process.env.DATABASE_URL ?? "";
 const direct = process.env.DATABASE_URL_UNPOOLED || pooled.replace("-pooler", "");
