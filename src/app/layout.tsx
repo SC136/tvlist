@@ -5,6 +5,7 @@ import { db, schema } from "@/db";
 import { getViewer } from "@/lib/session";
 import { isDemoMode } from "@/lib/tmdb";
 import { PALETTES, paletteBackground, paletteCss } from "@/lib/palettes";
+import { siteUrl } from "@/lib/site";
 import { SiteNav } from "@/components/layout/site-nav";
 import { ScrollReset } from "@/components/layout/scroll-reset";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -16,10 +17,9 @@ const overpass = Overpass({
   weight: ["400", "600", "700", "800"],
 });
 
-const SITE_URL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "tvlist · Track, discover and share movies & TV",
     template: "%s · tvlist",

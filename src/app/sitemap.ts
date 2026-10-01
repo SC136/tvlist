@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
 import { desc, eq, isNotNull } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { siteUrl } from "@/lib/site";
 
 export const revalidate = 86400;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+  const base = siteUrl();
   const statics = ["", "/search/movie", "/search/tv", "/search/people", "/reviews", "/lists", "/forum", "/airing", "/about"].map((p) => ({
     url: `${base}${p}`,
     changeFrequency: "daily" as const,

@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { siteUrl, trustedOrigins } from "@/lib/site";
 import { USERNAME_PATTERN } from "@/lib/validation";
 
 const socialProviders: BetterAuthOptions["socialProviders"] = {};
@@ -44,6 +45,8 @@ async function generateUsername(seed: string): Promise<string> {
 
 export const auth = betterAuth({
   appName: "tvlist",
+  baseURL: siteUrl(),
+  trustedOrigins: trustedOrigins(),
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: {
     enabled: true,

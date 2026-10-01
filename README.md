@@ -38,28 +38,30 @@ Without a `TMDB_API_KEY` the site runs on a small built-in demo catalog. Get a f
 | `npm run db:generate` | Generate a SQL migration after editing `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
 
-## Deploy (free)
+## Deploy to Vercel (free)
 
-**Hosting: Vercel** (free Hobby plan). **Database: Neon** (free Postgres).
+**Hosting: Vercel** (free Hobby plan) · **Database: Neon** (free Postgres) · **Data: TMDB** (free key).
 
-1. **Create the database** at <https://neon.com> and copy the **pooled** connection string.
-2. **Apply the schema** (once, from your machine):
-   ```bash
-   DATABASE_URL="postgres://…" npm run db:migrate
-   ```
-   Run it again after future schema changes.
-3. **Deploy to Vercel**: import the repo and set these environment variables:
+1. **Database.** Create a project at <https://neon.com> and copy the **pooled** connection string of its default (`main`) branch.
+   (Tip: keep `main` for production and use a separate Neon branch, such as `dev`, for local development and Vercel *Preview* deployments.)
+2. **Import the repo** at <https://vercel.com/new>. The framework (Next.js), build command (`vercel-build`) and region are picked up from `package.json` and `vercel.json`.
+3. **Set environment variables** (Project → Settings → Environment Variables):
 
-   | Variable | Value |
-   | --- | --- |
-   | `DATABASE_URL` | Neon pooled connection string |
-   | `TMDB_API_KEY` | your TMDB read access token |
-   | `BETTER_AUTH_SECRET` | random 32+ chars (`openssl rand -base64 32`) |
-   | `BETTER_AUTH_URL` | `https://your-domain` |
-   | `CRON_SECRET` | any random string (protects the daily job) |
+   | Variable | Value | Required |
+   | --- | --- | --- |
+   | `DATABASE_URL` | Neon **pooled** connection string | yes |
+   | `TMDB_API_KEY` | TMDB API Read Access Token (<https://www.themoviedb.org/settings/api>) | yes (without it the site shows a tiny demo catalog) |
+   | `BETTER_AUTH_SECRET` | random 32+ chars: `openssl rand -base64 32` | yes |
+   | `CRON_SECRET` | random string: `openssl rand -hex 32` | yes (the daily job refuses to run without it) |
+   | `BETTER_AUTH_URL` | `https://your-domain`, **Production only** | only for a custom domain; Vercel URLs are detected automatically |
+   | `DATABASE_URL_UNPOOLED` | Neon direct connection string | optional (derived from `DATABASE_URL` otherwise) |
+   | `GOOGLE_CLIENT_ID/SECRET`, `DISCORD_CLIENT_ID/SECRET` | OAuth app credentials | optional: enables those sign-in buttons |
+   | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token | optional: enables avatar/banner uploads |
 
-   Optional: `GOOGLE_CLIENT_ID/SECRET`, `DISCORD_CLIENT_ID/SECRET` (enables those sign-in buttons), `BLOB_READ_WRITE_TOKEN` (enables avatar/banner uploads via Vercel Blob).
-4. `vercel.json` already schedules a daily job (`/api/cron/refresh`) that sends "new episode aired" notifications and refreshes airing shows.
+4. **Deploy.** On every **production** deploy the build first applies pending database migrations (`drizzle/`) and fails the deploy if one breaks, so a bad schema never goes live. Preview deploys never touch the database unless you set `RUN_MIGRATIONS=1`.
+5. **Daily job.** `vercel.json` schedules `/api/cron/refresh` (06:00 UTC). It sends "new episode aired" notifications and refreshes airing shows. Vercel authenticates it automatically with `CRON_SECRET`.
+
+To apply migrations by hand instead: `DATABASE_URL="postgres://…" npm run db:migrate`.
 
 ### Which database? (it won't go to sleep for good)
 
