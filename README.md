@@ -20,23 +20,25 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Postgres + Drizzle OR
 
 ## Run it locally
 
+Requires Node 20.9+ and [pnpm](https://pnpm.io/installation) (`corepack enable` is the easiest way to get the pinned version).
+
 ```bash
-npm install
+pnpm install
 cp .env.example .env.local     # then fill in TMDB_API_KEY and BETTER_AUTH_SECRET
-npm run dev
+pnpm dev
 ```
 
-`npm run dev` starts an **embedded Postgres** (stored in `.data/`) when `DATABASE_URL` is empty, so you need no Docker or cloud account to develop. Set `DATABASE_URL` to use a real Postgres instead.
+`pnpm dev` starts an **embedded Postgres** (stored in `.data/`) when `DATABASE_URL` is empty, so you need no Docker or cloud account to develop. Set `DATABASE_URL` to use a real Postgres instead.
 
 Without a `TMDB_API_KEY` the site runs on a small built-in demo catalog. Get a free key at <https://www.themoviedb.org/settings/api> (use the **API Read Access Token**).
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Dev server (+ local database if `DATABASE_URL` is empty) |
-| `npm run build` / `npm start` | Production build / server |
-| `npm run typecheck` / `npm run lint` | Checks |
-| `npm run db:generate` | Generate a SQL migration after editing `src/db/schema.ts` |
-| `npm run db:migrate` | Apply migrations to `DATABASE_URL` |
+| `pnpm dev` | Dev server (+ local database if `DATABASE_URL` is empty) |
+| `pnpm build` / `pnpm start` | Production build / server |
+| `pnpm typecheck` / `pnpm lint` | Checks |
+| `pnpm db:generate` | Generate a SQL migration after editing `src/db/schema.ts` |
+| `pnpm db:migrate` | Apply migrations to `DATABASE_URL` |
 
 ## Deploy to Vercel (free)
 
@@ -61,7 +63,7 @@ Without a `TMDB_API_KEY` the site runs on a small built-in demo catalog. Get a f
 4. **Deploy.** On every **production** deploy the build first applies pending database migrations (`drizzle/`) and fails the deploy if one breaks, so a bad schema never goes live. Preview deploys never touch the database unless you set `RUN_MIGRATIONS=1`.
 5. **Daily job.** `vercel.json` schedules `/api/cron/refresh` (06:00 UTC). It sends "new episode aired" notifications and refreshes airing shows. Vercel authenticates it automatically with `CRON_SECRET`.
 
-To apply migrations by hand instead: `DATABASE_URL="postgres://…" npm run db:migrate`.
+To apply migrations by hand instead: `DATABASE_URL="postgres://…" pnpm db:migrate`.
 
 ### Which database? (it won't go to sleep for good)
 
@@ -71,11 +73,11 @@ To apply migrations by hand instead: `DATABASE_URL="postgres://…" npm run db:m
 | Supabase | Free projects are **paused after 7 days without activity** and stay down until someone restores them. Not suitable for a public site. |
 | CockroachDB Serverless | Doesn't pause and has 10 GiB, but it isn't fully Postgres-compatible, so it's riskier with this schema. |
 
-Because everything goes through Drizzle + standard Postgres, you can move to any Postgres host (Railway, Render, a VPS, Neon's paid tier with always-on compute) by changing `DATABASE_URL` and running `npm run db:migrate`.
+Because everything goes through Drizzle + standard Postgres, you can move to any Postgres host (Railway, Render, a VPS, Neon's paid tier with always-on compute) by changing `DATABASE_URL` and running `pnpm db:migrate`.
 
 ## Making someone a moderator
 
-Roles live in the `user.role` column (`user`, `moderator`, `admin`). Update it with SQL or `npm run db:studio`:
+Roles live in the `user.role` column (`user`, `moderator`, `admin`). Update it with SQL or `pnpm db:studio`:
 
 ```sql
 UPDATE "user" SET role = 'admin' WHERE username = 'yourname';

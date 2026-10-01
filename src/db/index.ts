@@ -12,7 +12,7 @@ const MISSING = "postgres://missing-database-url@127.0.0.1:1/missing";
 function createDb(): Database {
   const url = process.env.DATABASE_URL;
   if (!url && process.env.NODE_ENV !== "production") {
-    console.warn("[tvlist] DATABASE_URL is not set. Use `npm run dev` (starts a local database) or set DATABASE_URL.");
+    console.warn("[tvlist] DATABASE_URL is not set. Use `pnpm dev` (starts a local database) or set DATABASE_URL.");
   }
   const client = postgres(url || MISSING, {
     // Neon's pooler (PgBouncer, transaction mode) and the local PGlite server don't support prepared statements.

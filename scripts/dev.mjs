@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * `npm run dev`
+ * `pnpm dev`
  *
  * - If DATABASE_URL is set (env or .env.local / .env), just runs `next dev`.
  * - Otherwise starts an embedded Postgres (PGlite) stored in .data/pglite as a
