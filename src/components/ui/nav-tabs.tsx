@@ -8,12 +8,41 @@ export function NavTabs({
   tabs,
   className,
   itemClassName,
+  variant = "underline",
 }: {
   tabs: { href: string; label: string; exact?: boolean }[];
   className?: string;
   itemClassName?: string;
+  variant?: "underline" | "pills";
 }) {
   const pathname = usePathname();
+
+  if (variant === "pills") {
+    return (
+      <nav className={cn("scrollbar-none flex items-center gap-1.5 overflow-x-auto", className)}>
+        {tabs.map((tab) => {
+          const active = tab.exact ? pathname === tab.href : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-2 text-[13px] font-bold whitespace-nowrap transition",
+                active
+                  ? "bg-accent text-on-accent shadow-md"
+                  : "text-text-lighter hover:bg-fg-grey hover:text-bright",
+                itemClassName,
+              )}
+              aria-current={active ? "page" : undefined}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
     <nav className={cn("scrollbar-none flex overflow-x-auto", className)}>
       {tabs.map((tab) => {
