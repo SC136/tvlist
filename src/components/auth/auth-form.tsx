@@ -108,6 +108,16 @@ export function AuthForm({ mode, providers }: { mode: Mode; providers: ("google"
           className="input-grey py-3"
           aria-label="Password"
         />
+        {mode === "login" && (
+          <div className="flex justify-end pt-0.5">
+            <Link
+              href="/forgot-password"
+              className="text-[12px] font-semibold text-text-lighter transition hover:text-accent"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        )}
         {mode === "signup" && (
           <input
             name="confirm"
