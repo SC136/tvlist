@@ -47,6 +47,31 @@ if (configured) {
   const dataDir = path.join(root, ".data", "pglite");
   mkdirSync(dataDir, { recursive: true });
   const db = await PGlite.create(dataDir);
+
+  for (const q of [
+    `ALTER TYPE "public"."media_type" ADD VALUE IF NOT EXISTS 'anime'`,
+    `ALTER TYPE "public"."media_type" ADD VALUE IF NOT EXISTS 'game'`,
+    `ALTER TYPE "public"."media_type" ADD VALUE IF NOT EXISTS 'manga'`,
+    `ALTER TYPE "public"."media_type" ADD VALUE IF NOT EXISTS 'book'`,
+    `ALTER TYPE "public"."media_type" ADD VALUE IF NOT EXISTS 'music'`,
+    `ALTER TYPE "public"."forum_category" ADD VALUE IF NOT EXISTS 'ANIME'`,
+    `ALTER TYPE "public"."forum_category" ADD VALUE IF NOT EXISTS 'GAMES'`,
+    `ALTER TYPE "public"."forum_category" ADD VALUE IF NOT EXISTS 'MANGA'`,
+    `ALTER TYPE "public"."forum_category" ADD VALUE IF NOT EXISTS 'BOOKS'`,
+    `ALTER TYPE "public"."forum_category" ADD VALUE IF NOT EXISTS 'MUSIC'`,
+    `ALTER TABLE "media" ALTER COLUMN "tmdb_id" TYPE bigint`,
+    `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "website" text`,
+    `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "location" text`,
+    `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "status_quote" text`,
+    `ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "default_tab" text DEFAULT 'overview'`,
+  ]) {
+    try {
+      await db.exec(q);
+    } catch {
+      // Ignored if type does not exist yet or value already present
+    }
+  }
+
   await migrate(drizzle({ client: db }), { migrationsFolder: path.join(root, "drizzle") });
 
   const port = Number(process.env.PGLITE_PORT ?? 54329);

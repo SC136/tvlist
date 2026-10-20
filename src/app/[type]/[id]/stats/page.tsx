@@ -22,8 +22,8 @@ export default async function MediaStatsPage({ params }: PageProps<"/[type]/[id]
   const tiles = [
     { label: "TMDB Score", value: d.score !== null ? `${d.score}%` : "—" },
     { label: "TMDB Votes", value: formatNumber(d.voteCount) },
-    { label: "tvlist Mean Score", value: stats?.mean ? `${stats.mean}%` : "—" },
-    { label: "tvlist Members", value: formatNumber(stats?.members ?? 0) },
+    { label: "Community Mean Score", value: stats?.mean ? `${stats.mean}%` : "—" },
+    { label: "Omnilist Members", value: formatNumber(stats?.members ?? 0) },
     { label: "Favorites", value: formatNumber(favourites) },
     { label: "Popularity", value: formatNumber(Math.round(d.popularity)) },
   ];

@@ -2,7 +2,8 @@ import "server-only";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { MediaPerson } from "@/db/schema";
-import { getMediaDetails, type MediaDetails } from "@/lib/tmdb";
+import { fetchUnifiedMediaDetails as getMediaDetails } from "@/lib/media-loader";
+import type { MediaDetails } from "@/lib/media";
 import type { ListStatus } from "@/lib/format";
 import type { MediaType } from "@/lib/media";
 
@@ -85,11 +86,12 @@ export async function getStatusesFor(
   items: { type: MediaType; id: number }[],
 ): Promise<Record<string, ListStatus>> {
   if (!userId || items.length === 0) return {};
-  const movies = items.filter((i) => i.type === "movie").map((i) => i.id);
-  const shows = items.filter((i) => i.type === "tv").map((i) => i.id);
   const conditions = [];
-  if (movies.length) conditions.push(and(eq(schema.media.type, "movie"), inArray(schema.media.tmdbId, movies)));
-  if (shows.length) conditions.push(and(eq(schema.media.type, "tv"), inArray(schema.media.tmdbId, shows)));
+  for (const t of ["movie", "tv", "anime", "game", "manga", "book", "music"] as const) {
+    const ids = items.filter((i) => i.type === t).map((i) => i.id);
+    if (ids.length) conditions.push(and(eq(schema.media.type, t), inArray(schema.media.tmdbId, ids)));
+  }
+  if (!conditions.length) return {};
   const rows = await db
     .select({ type: schema.media.type, tmdbId: schema.media.tmdbId, status: schema.listEntry.status })
     .from(schema.listEntry)
@@ -98,7 +100,7 @@ export async function getStatusesFor(
   return Object.fromEntries(rows.map((r) => [`${r.type}:${r.tmdbId}`, r.status]));
 }
 
-/** Community stats for a title from tvlist users: list status and score distribution. */
+/** Community stats for a title from Omnilist users: list status and score distribution. */
 export async function getCommunityStats(mediaId: number) {
   const [statusRows, scoreRows, [avg]] = await Promise.all([
     db

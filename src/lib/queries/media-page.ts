@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { and, count, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getViewer } from "@/lib/session";
-import { getMediaDetails } from "@/lib/tmdb";
+import { fetchUnifiedMediaDetails as getMediaDetails } from "@/lib/media-loader";
 import { findMedia, refreshMediaIfStale } from "@/lib/queries/media";
 import type { SavedEntry } from "@/actions/list";
 import { isMediaType, type MediaType } from "@/lib/media";
@@ -23,7 +23,10 @@ export const getMediaPage = cache(async (typeParam: string, idParam: string) => 
   const id = Number(idParam);
   if (!Number.isInteger(id) || id <= 0) return null;
 
-  const details = await getMediaDetails(type, id, await viewerRegion());
+  const details = await getMediaDetails(type, id, await viewerRegion()).catch((err) => {
+    console.warn(`[media-page] Failed to fetch details for ${type}/${id}:`, err instanceof Error ? err.message : err);
+    return null;
+  });
   if (!details) return null;
 
   const [viewer, row] = await Promise.all([getViewer(), refreshMediaIfStale(details).then((r) => r ?? findMedia(type, id))]);

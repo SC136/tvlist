@@ -25,5 +25,27 @@ export function profileAccentClass(color: string | null | undefined): string {
   return color && color !== "auto" && (PALETTE_IDS as readonly string[]).includes(color) ? `accent-${color}` : "";
 }
 
+export const DEFAULT_PROFILE_TABS = [
+  { value: "overview", label: "Overview" },
+  { value: "movielist", label: "Movie List" },
+  { value: "tvlist", label: "TV List" },
+  { value: "animelist", label: "Anime List" },
+  { value: "mangalist", label: "Manga List" },
+  { value: "booklist", label: "Book List" },
+  { value: "musiclist", label: "Music List" },
+  { value: "gamelist", label: "Game List" },
+  { value: "diary", label: "Diary" },
+] as const;
+
+export type DefaultProfileTab = (typeof DEFAULT_PROFILE_TABS)[number]["value"];
+
+export const websiteSchema = z
+  .string()
+  .trim()
+  .max(250)
+  .refine((v) => v === "" || /^https?:\/\/[^\s"'<>]+$/i.test(v), "Website must start with http:// or https://")
+  .transform((v) => (v === "" ? null : v))
+  .nullish();
+
 export const textPostSchema = z.string().trim().min(1, "Write something first.").max(5000);
 export const replySchema = z.string().trim().min(1, "Write something first.").max(2000);

@@ -8,13 +8,44 @@ import { PeopleBrowse } from "@/components/media/people-browse";
 import { Empty, Page, Pagination, SectionHeader } from "@/components/ui/basics";
 import { getViewer } from "@/lib/session";
 import { getStatusesFor } from "@/lib/queries/media";
-import { discover, getCuratedList, getTrending, type BrowseFilters as Filters, type BrowseSort, type CuratedList } from "@/lib/tmdb";
-import { genreIdByName, isMediaType, MEDIA_LABEL, type MediaSummary, type MediaType, type Paged } from "@/lib/media";
+import {
+  discover,
+  getCuratedList,
+  getTrending,
+  type BrowseFilters as Filters,
+  type BrowseSort,
+  type CuratedList,
+} from "@/lib/tmdb";
+import {
+  getAiringAnime,
+  getAnimeMovies,
+  getLightNovels,
+  getPopularAnime,
+  getPopularManga,
+  getTopManhwa,
+  getTopRatedAnime,
+  getTopRatedManga,
+  getTrendingAnime,
+  getTrendingManga,
+  searchAnime,
+  searchManga,
+} from "@/lib/anilist";
+import { getNewGames, getTopRatedGames, getTrendingGames, searchGames } from "@/lib/games";
+import { getBooksBySubject, getTopRatedBooks, getTrendingBooks, searchBooks } from "@/lib/books";
+import { getTopRatedMusic, getTrendingMusic, searchMusic } from "@/lib/music";
+import {
+  CATEGORY_LABEL,
+  genreIdByName,
+  isMediaCategory,
+  type MediaCategory,
+  type MediaSummary,
+  type Paged,
+} from "@/lib/media";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
 const SORTS: BrowseSort[] = ["popularity", "score", "newest", "oldest", "title", "votes", "revenue"];
-const LISTS: Record<MediaType, { key: CuratedList | "trending"; title: string }[]> = {
+const LISTS: Record<MediaCategory, { key: string; title: string }[]> = {
   movie: [
     { key: "trending", title: "Trending Now" },
     { key: "now_playing", title: "Now in Theaters" },
@@ -29,6 +60,39 @@ const LISTS: Record<MediaType, { key: CuratedList | "trending"; title: string }[
     { key: "popular", title: "Popular" },
     { key: "top_rated", title: "Top 100" },
   ],
+  anime: [
+    { key: "trending", title: "Trending Anime" },
+    { key: "airing", title: "Airing This Season" },
+    { key: "top_rated", title: "Top 100 Anime" },
+    { key: "movies", title: "Popular Anime Movies" },
+    { key: "popular", title: "All-Time Popular" },
+  ],
+  manga: [
+    { key: "trending", title: "Trending Manga" },
+    { key: "popular", title: "All-Time Popular" },
+    { key: "top_rated", title: "Top 100 Manga" },
+    { key: "manhwa", title: "Popular Manhwa" },
+    { key: "novels", title: "Light Novels" },
+  ],
+  book: [
+    { key: "trending", title: "Trending Books" },
+    { key: "classics", title: "Classic Literature" },
+    { key: "fantasy", title: "Fantasy & Sci-Fi" },
+    { key: "thriller", title: "Mystery & Thrillers" },
+    { key: "romance", title: "Romance" },
+  ],
+  music: [
+    { key: "trending", title: "Top Albums" },
+    { key: "classics", title: "Greatest Hits & Classics" },
+    { key: "rock", title: "Rock & Alternative" },
+    { key: "pop", title: "Pop & Dance" },
+    { key: "hiphop", title: "Hip-Hop & R&B" },
+  ],
+  game: [
+    { key: "trending", title: "Popular Games" },
+    { key: "top_rated", title: "Top Rated of All Time" },
+    { key: "new", title: "Recent Releases" },
+  ],
 };
 
 function str(v: string | string[] | undefined): string | undefined {
@@ -38,8 +102,8 @@ function str(v: string | string[] | undefined): string | undefined {
 export async function generateMetadata({ params }: PageProps<"/search/[type]">): Promise<Metadata> {
   const { type } = await params;
   if (type === "people") return { title: "Browse People" };
-  if (!isMediaType(type)) return {};
-  return { title: `Browse ${MEDIA_LABEL[type].many}` };
+  if (!isMediaCategory(type)) return {};
+  return { title: `Browse ${CATEGORY_LABEL[type].many}` };
 }
 
 export default async function BrowsePage({ params, searchParams }: PageProps<"/search/[type]">) {
@@ -53,7 +117,7 @@ export default async function BrowsePage({ params, searchParams }: PageProps<"/s
       </Page>
     );
   }
-  if (!isMediaType(type)) notFound();
+  if (!isMediaCategory(type)) notFound();
 
   const page = Math.max(1, Math.min(500, Number(str(sp.page)) || 1));
   const list = str(sp.list);
@@ -62,7 +126,7 @@ export default async function BrowsePage({ params, searchParams }: PageProps<"/s
     query: str(sp.search)?.slice(0, 100),
     genres: str(sp.genres)
       ?.split(",")
-      .map((g) => genreIdByName(type, g))
+      .map((g) => genreIdByName(type === "movie" ? "movie" : "tv", g))
       .filter((g): g is number => g !== undefined),
     year: Number(str(sp.year)) || undefined,
     tvType: str(sp.format) !== undefined ? Number(str(sp.format)) : undefined,
@@ -80,7 +144,7 @@ export default async function BrowsePage({ params, searchParams }: PageProps<"/s
 
   const heading = (
     <h1 className="sr-only">
-      Browse {MEDIA_LABEL[type].many}
+      Browse {CATEGORY_LABEL[type].many}
     </h1>
   );
 
@@ -89,7 +153,56 @@ export default async function BrowsePage({ params, searchParams }: PageProps<"/s
     const sections = await Promise.all(
       LISTS[type].map(async (s) => ({
         ...s,
-        data: s.key === "trending" ? await getTrending(type, "week") : await getCuratedList(type, s.key),
+        data:
+          type === "anime"
+            ? s.key === "airing"
+              ? await getAiringAnime()
+              : s.key === "top_rated"
+                ? await getTopRatedAnime()
+                : s.key === "movies"
+                  ? await getAnimeMovies()
+                  : s.key === "popular"
+                    ? await getPopularAnime()
+                    : await getTrendingAnime()
+            : type === "manga"
+              ? s.key === "popular"
+                ? await getPopularManga()
+                : s.key === "top_rated"
+                  ? await getTopRatedManga()
+                  : s.key === "manhwa"
+                    ? await getTopManhwa()
+                    : s.key === "novels"
+                      ? await getLightNovels()
+                      : await getTrendingManga()
+            : type === "book"
+              ? s.key === "classics"
+                ? await getBooksBySubject("classics")
+                : s.key === "fantasy"
+                  ? await getBooksBySubject("fantasy")
+                  : s.key === "thriller"
+                    ? await getBooksBySubject("thriller")
+                    : s.key === "romance"
+                      ? await getBooksBySubject("romance")
+                      : await getTrendingBooks()
+            : type === "music"
+              ? s.key === "classics"
+                ? await getTopRatedMusic()
+                : s.key === "rock"
+                  ? await searchMusic("rock")
+                  : s.key === "pop"
+                    ? await searchMusic("pop")
+                    : s.key === "hiphop"
+                      ? await searchMusic("hip hop")
+                      : await getTrendingMusic()
+            : type === "game"
+              ? s.key === "top_rated"
+                ? await getTopRatedGames()
+                : s.key === "new"
+                  ? await getNewGames()
+                  : await getTrendingGames()
+              : s.key === "trending"
+                ? await getTrending(type, "week")
+                : await getCuratedList(type, s.key as CuratedList),
       })),
     );
     const statuses = await getStatusesFor(
@@ -133,7 +246,93 @@ export default async function BrowsePage({ params, searchParams }: PageProps<"/s
 
   let data: Paged<MediaSummary>;
   let title: string | null = null;
-  if (list && !filtered) {
+  if (type === "game") {
+    if (filters.query) {
+      data = await searchGames(filters.query, page);
+    } else if (list === "top_rated") {
+      data = await getTopRatedGames(page);
+    } else if (list === "new") {
+      data = await getNewGames(page);
+    } else {
+      data = await getTrendingGames(page);
+    }
+  } else if (type === "book") {
+    if (filters.query) {
+      data = await searchBooks(filters.query, page);
+    } else if (list === "classics") {
+      data = await getBooksBySubject("classics", page);
+    } else if (list === "fantasy") {
+      data = await getBooksBySubject("fantasy", page);
+    } else if (list === "thriller") {
+      data = await getBooksBySubject("thriller", page);
+    } else if (list === "romance") {
+      data = await getBooksBySubject("romance", page);
+    } else {
+      data = await getTrendingBooks(page);
+    }
+  } else if (type === "music") {
+    if (filters.query) {
+      data = await searchMusic(filters.query, page);
+    } else if (list === "classics") {
+      data = await getTopRatedMusic(page);
+    } else if (list === "rock") {
+      data = await searchMusic("rock", page);
+    } else if (list === "pop") {
+      data = await searchMusic("pop", page);
+    } else if (list === "hiphop") {
+      data = await searchMusic("hip hop", page);
+    } else {
+      data = await getTrendingMusic(page);
+    }
+  } else if (type === "anime") {
+    if (filtered) {
+      data = await searchAnime(
+        filters.query,
+        {
+          genre: str(sp.genres)?.split(",")[0],
+          year: filters.year,
+          sort: filters.sort,
+          status: str(sp.status),
+        },
+        page,
+      );
+    } else if (list === "airing") {
+      data = await getAiringAnime(page);
+    } else if (list === "top_rated") {
+      data = await getTopRatedAnime(page);
+    } else if (list === "movies") {
+      data = await getAnimeMovies(page);
+    } else if (list === "popular") {
+      data = await getPopularAnime(page);
+    } else {
+      data = await getTrendingAnime(page);
+    }
+  } else if (type === "manga") {
+    if (filtered) {
+      data = await searchManga(
+        filters.query,
+        {
+          genre: str(sp.genres)?.split(",")[0],
+          year: filters.year,
+          sort: filters.sort,
+          format: str(sp.format),
+          status: str(sp.status),
+          country: str(sp.country),
+        },
+        page,
+      );
+    } else if (list === "popular") {
+      data = await getPopularManga(page);
+    } else if (list === "top_rated") {
+      data = await getTopRatedManga(page);
+    } else if (list === "manhwa") {
+      data = await getTopManhwa(page);
+    } else if (list === "novels") {
+      data = await getLightNovels(page);
+    } else {
+      data = await getTrendingManga(page);
+    }
+  } else if (list && !filtered) {
     const entry = LISTS[type].find((l) => l.key === list);
     if (!entry) notFound();
     title = entry.title;

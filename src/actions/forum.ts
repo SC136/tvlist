@@ -18,7 +18,7 @@ const threadInput = z.object({
   title: z.string().trim().min(3, "Title must be at least 3 characters.").max(150),
   body: z.string().trim().min(1, "Write something first.").max(20000),
   category: z.enum(categories),
-  mediaType: z.enum(["movie", "tv"]).nullable(),
+  mediaType: z.enum(["movie", "tv", "anime", "game", "manga", "book", "music"]).nullable(),
   tmdbId: z.number().int().positive().nullable(),
 });
 

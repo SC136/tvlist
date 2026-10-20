@@ -5,13 +5,18 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Bell,
+  BookOpen,
+  BookText,
   ChevronDown,
   Film,
+  Gamepad2,
   LogOut,
   Menu,
+  Music,
   NotebookPen,
   Search,
   Settings,
+  Sparkles,
   Star,
   Tv,
   User,
@@ -33,7 +38,7 @@ export interface NavViewer {
   unread: number;
 }
 
-const BANNER_PAGES = /^\/(movie|tv|user)\/[^/]+/;
+const BANNER_PAGES = /^\/(movie|tv|anime|manga|game|book|music|user)\/[^/]+/;
 
 export function SiteNav({ viewer }: { viewer: NavViewer | null }) {
   const pathname = usePathname();
@@ -85,6 +90,11 @@ export function SiteNav({ viewer }: { viewer: NavViewer | null }) {
         { href: `/user/${viewer.username}`, label: "Profile" },
         { href: `/user/${viewer.username}/movielist`, label: "Movie List" },
         { href: `/user/${viewer.username}/tvlist`, label: "TV List" },
+        { href: `/user/${viewer.username}/animelist`, label: "Anime List" },
+        { href: `/user/${viewer.username}/mangalist`, label: "Manga List" },
+        { href: `/user/${viewer.username}/booklist`, label: "Book List" },
+        { href: `/user/${viewer.username}/musiclist`, label: "Music List" },
+        { href: `/user/${viewer.username}/gamelist`, label: "Game List" },
       ]
     : [{ href: "/", label: "Home" }];
 
@@ -133,6 +143,11 @@ export function SiteNav({ viewer }: { viewer: NavViewer | null }) {
                 <div className="grid gap-1">
                   <BrowseLink href="/search/movie" icon={<Film />} title="Movies" sub="Trending, top 100, upcoming" onClick={close} />
                   <BrowseLink href="/search/tv" icon={<Tv />} title="TV Shows" sub="Airing, popular, top 100" onClick={close} />
+                  <BrowseLink href="/search/anime" icon={<Sparkles />} title="Anime" sub="Top 100, seasons, movies" onClick={close} />
+                  <BrowseLink href="/search/manga" icon={<BookOpen />} title="Manga" sub="Popular, top rated, manhwa" onClick={close} />
+                  <BrowseLink href="/search/book" icon={<BookText />} title="Books" sub="Trending, classics, fantasy" onClick={close} />
+                  <BrowseLink href="/search/music" icon={<Music />} title="Music" sub="Top albums, genres, artists" onClick={close} />
+                  <BrowseLink href="/search/game" icon={<Gamepad2 />} title="Games" sub="Popular, top rated, new" onClick={close} />
                   <BrowseLink href="/search/people" icon={<Users />} title="People" sub="Actors, directors, writers" onClick={close} />
                   <BrowseLink href="/reviews" icon={<Star />} title="Reviews" sub="Written by the community" onClick={close} />
                   <BrowseLink href="/lists" icon={<ListVideo />} title="Lists" sub="Curated collections" onClick={close} />
@@ -236,6 +251,11 @@ export function SiteNav({ viewer }: { viewer: NavViewer | null }) {
                 ...links,
                 { href: "/search/movie", label: "Browse Movies" },
                 { href: "/search/tv", label: "Browse TV" },
+                { href: "/search/anime", label: "Browse Anime" },
+                { href: "/search/manga", label: "Browse Manga" },
+                { href: "/search/book", label: "Browse Books" },
+                { href: "/search/music", label: "Browse Music" },
+                { href: "/search/game", label: "Browse Games" },
                 { href: "/search/people", label: "People" },
                 { href: "/reviews", label: "Reviews" },
                 { href: "/lists", label: "Lists" },

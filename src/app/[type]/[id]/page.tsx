@@ -143,9 +143,60 @@ export default async function MediaOverview({ params }: PageProps<"/[type]/[id]"
         </section>
       )}
 
+      {d.screenshots && d.screenshots.length > 0 && (
+        <section>
+          <SectionHeader title="Screenshots" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {d.screenshots.slice(0, 6).map((src, i) => (
+              <a
+                key={i}
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card group relative aspect-video overflow-hidden shadow-[var(--shadow-card)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`${d.title} screenshot ${i + 1}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {d.tracks && d.tracks.length > 0 && (
+        <section>
+          <SectionHeader title={`Tracklist (${d.tracks.length})`} />
+          <div className="card divide-y divide-fg-grey-dark overflow-hidden">
+            {d.tracks.map((t) => (
+              <div key={t.number} className="flex items-center justify-between gap-4 px-4 py-3 text-[13px]">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="w-6 text-center text-[12px] font-bold text-text-lighter">{t.number}</span>
+                  <span className="truncate font-semibold text-bright">{t.name}</span>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  {t.previewUrl && (
+                    <audio controls preload="none" className="h-7 w-44 max-w-[180px]" src={t.previewUrl} />
+                  )}
+                  {t.duration > 0 && (
+                    <span className="text-[12px] font-medium text-text-lighter">
+                      {Math.floor(t.duration / 60)}:{String(t.duration % 60).padStart(2, "0")}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {recs.length > 0 && (
         <section>
-          <SectionHeader title="Recommendations" />
+          <SectionHeader title={d.type === "game" ? "Related Games" : "Recommendations"} />
           <MediaGrid className="lg:grid-cols-5">
             {recs.map((r) => (
               <MediaCard key={r.id} media={r} listStatus={statuses[`${r.type}:${r.id}`]} />

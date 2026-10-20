@@ -7,6 +7,7 @@ import { MediaCard, MediaGrid } from "@/components/media/media-card";
 import { PersonImage } from "@/components/ui/cover";
 import { Empty, SectionHeader } from "@/components/ui/basics";
 import { getProfile } from "@/lib/queries/profile";
+import { isAnimeMedia } from "@/lib/media";
 
 export async function generateMetadata({ params }: PageProps<"/user/[username]/favorites">): Promise<Metadata> {
   const { username } = await params;
@@ -30,8 +31,13 @@ export default async function FavoritesPage({ params }: PageProps<"/user/[userna
     }),
   ]);
   const groups = [
-    { title: "Movies", items: media.filter((f) => f.media.type === "movie") },
-    { title: "TV Shows", items: media.filter((f) => f.media.type === "tv") },
+    { title: "Anime", items: media.filter((f) => f.media.type === "anime" || isAnimeMedia(f.media)) },
+    { title: "Manga", items: media.filter((f) => f.media.type === "manga") },
+    { title: "Books", items: media.filter((f) => f.media.type === "book") },
+    { title: "Music", items: media.filter((f) => f.media.type === "music") },
+    { title: "Games", items: media.filter((f) => f.media.type === "game") },
+    { title: "Movies", items: media.filter((f) => f.media.type === "movie" && !isAnimeMedia(f.media)) },
+    { title: "TV Shows", items: media.filter((f) => f.media.type === "tv" && !isAnimeMedia(f.media)) },
   ];
 
   if (!media.length && !people.length) return <Empty>No favourites yet.</Empty>;

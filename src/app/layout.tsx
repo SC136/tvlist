@@ -21,13 +21,13 @@ const overpass = Overpass({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "tvlist · Track, discover and share movies & TV",
-    template: "%s · tvlist",
+    default: "Omnilist · Track, discover and share movies, TV, anime, manga & games",
+    template: "%s · Omnilist",
   },
   description:
-    "Track the movies and TV shows you watch, rate and review them, keep a diary, make lists, and follow friends — all in one place.",
-  applicationName: "tvlist",
-  openGraph: { siteName: "tvlist", type: "website" },
+    "Track movies, TV shows, anime, manga and video games, rate and review them, keep a diary, make lists, and follow friends — all in one place.",
+  applicationName: "Omnilist",
+  openGraph: { siteName: "Omnilist", type: "website" },
   twitter: { card: "summary_large_image" },
 };
 
@@ -58,7 +58,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={overpass.variable} data-theme="light" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <style dangerouslySetInnerHTML={{ __html: PALETTE_STYLES }} />
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script id="theme-script" dangerouslySetInnerHTML={{ __html: themeScript }} suppressHydrationWarning />
       </head>
       <body className="flex min-h-screen flex-col">
         <SiteNav

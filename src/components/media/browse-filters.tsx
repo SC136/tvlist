@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { Check, ChevronDown, LayoutGrid, List, Loader2, Search, X } from "lucide-react";
 import { Dropdown } from "@/components/ui/dropdown";
 import { cn } from "@/lib/cn";
-import { COUNTRIES, genreMap, LANGUAGES, WATCH_PROVIDERS, type MediaType } from "@/lib/media";
+import { COUNTRIES, genreMap, LANGUAGES, WATCH_PROVIDERS, type MediaCategory } from "@/lib/media";
 
 const TV_FORMATS = [
   { value: "4", label: "TV (Scripted)" },
@@ -22,7 +22,86 @@ const TV_STATUSES = [
   { value: "2", label: "In Production" },
 ];
 
-export function BrowseFilters({ type }: { type: MediaType }) {
+const GAME_GENRES = [
+  "Action",
+  "Adventure",
+  "RPG",
+  "Strategy",
+  "Shooter",
+  "Puzzle",
+  "Platformer",
+  "Simulation",
+  "Sports",
+  "Racing",
+  "Indie",
+];
+
+const ANIME_MANGA_GENRES = [
+  "Action",
+  "Adventure",
+  "Comedy",
+  "Drama",
+  "Fantasy",
+  "Horror",
+  "Mecha",
+  "Music",
+  "Mystery",
+  "Psychological",
+  "Romance",
+  "Sci-Fi",
+  "Slice of Life",
+  "Sports",
+  "Supernatural",
+  "Thriller",
+];
+
+const MANGA_FORMATS = [
+  { value: "MANGA", label: "Manga" },
+  { value: "NOVEL", label: "Light Novel" },
+  { value: "ONE_SHOT", label: "One Shot" },
+];
+
+const MANGA_STATUSES = [
+  { value: "RELEASING", label: "Publishing" },
+  { value: "FINISHED", label: "Finished" },
+  { value: "HIATUS", label: "Hiatus" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+const BOOK_GENRES = [
+  "Fiction",
+  "Science Fiction",
+  "Fantasy",
+  "Mystery",
+  "Thriller",
+  "Romance",
+  "Historical Fiction",
+  "Classics",
+  "Non-fiction",
+  "Biography",
+  "Philosophy",
+  "Psychology",
+  "History",
+  "Poetry",
+];
+
+const MUSIC_GENRES = [
+  "Rock",
+  "Pop",
+  "Alternative",
+  "Hip-Hop/Rap",
+  "R&B/Soul",
+  "Electronic",
+  "Indie",
+  "Jazz",
+  "Classical",
+  "Country",
+  "Metal",
+  "Folk",
+  "Soundtrack",
+];
+
+export function BrowseFilters({ type }: { type: MediaCategory }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -72,7 +151,7 @@ export function BrowseFilters({ type }: { type: MediaType }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="input-base pl-9"
-              placeholder={`Search ${type === "movie" ? "movies" : "TV shows"}`}
+              placeholder={`Search ${type === "movie" ? "movies" : type === "anime" ? "anime" : type === "manga" ? "manga" : type === "book" ? "books" : type === "music" ? "albums & music" : type === "game" ? "games" : "TV shows"}`}
               aria-label="Search"
             />
             {search && (
@@ -94,7 +173,16 @@ export function BrowseFilters({ type }: { type: MediaType }) {
               </button>
             )}
           >
-            {Object.values(genreMap(type)).map((g) => (
+            {(type === "game"
+              ? GAME_GENRES
+              : type === "book"
+                ? BOOK_GENRES
+                : type === "music"
+                  ? MUSIC_GENRES
+                  : type === "anime" || type === "manga"
+                    ? ANIME_MANGA_GENRES
+                    : Object.values(genreMap(type === "movie" ? "movie" : "tv"))
+            ).map((g) => (
               <button
                 key={g}
                 type="button"
@@ -113,14 +201,27 @@ export function BrowseFilters({ type }: { type: MediaType }) {
         </Field>
 
         {type === "tv" && (
-          <>
-            <Field label="Format" className="lg:w-[150px]">
-              <Select value={params.get("format") ?? ""} onChange={(v) => update({ format: v })} options={TV_FORMATS} />
-            </Field>
-            <Field label="Status" className="lg:w-[160px]">
-              <Select value={params.get("status") ?? ""} onChange={(v) => update({ status: v })} options={TV_STATUSES} />
-            </Field>
-          </>
+          <Field label="Format" className="lg:w-[150px]">
+            <Select value={params.get("format") ?? ""} onChange={(v) => update({ format: v })} options={TV_FORMATS} />
+          </Field>
+        )}
+
+        {type === "manga" && (
+          <Field label="Format" className="lg:w-[150px]">
+            <Select value={params.get("format") ?? ""} onChange={(v) => update({ format: v })} options={MANGA_FORMATS} />
+          </Field>
+        )}
+
+        {(type === "tv" || type === "anime") && (
+          <Field label="Status" className="lg:w-[160px]">
+            <Select value={params.get("status") ?? ""} onChange={(v) => update({ status: v })} options={TV_STATUSES} />
+          </Field>
+        )}
+
+        {type === "manga" && (
+          <Field label="Status" className="lg:w-[160px]">
+            <Select value={params.get("status") ?? ""} onChange={(v) => update({ status: v })} options={MANGA_STATUSES} />
+          </Field>
         )}
 
         <Field label="Country" className="lg:w-[150px]">
@@ -143,13 +244,15 @@ export function BrowseFilters({ type }: { type: MediaType }) {
           />
         </Field>
 
-        <Field label="Streaming On" className="lg:w-[150px]">
-          <Select
-            value={params.get("provider") ?? ""}
-            onChange={(v) => update({ provider: v })}
-            options={WATCH_PROVIDERS.map((p) => ({ value: String(p.id), label: p.name }))}
-          />
-        </Field>
+        {type !== "game" && type !== "manga" && type !== "book" && type !== "music" && (
+          <Field label="Streaming On" className="lg:w-[150px]">
+            <Select
+              value={params.get("provider") ?? ""}
+              onChange={(v) => update({ provider: v })}
+              options={WATCH_PROVIDERS.map((p) => ({ value: String(p.id), label: p.name }))}
+            />
+          </Field>
+        )}
 
         <div className="col-span-2 flex items-end gap-3 sm:col-span-3 lg:ml-auto">
           {pending && <Loader2 className="mb-2.5 h-4 w-4 animate-spin text-accent" />}

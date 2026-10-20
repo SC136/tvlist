@@ -13,6 +13,11 @@ import { getActivities } from "@/lib/queries/activity";
 import { getStatusesFor } from "@/lib/queries/media";
 import { listReviews } from "@/lib/queries/reviews";
 import { getCuratedList, getTrending } from "@/lib/tmdb";
+import { getTrendingAnime, getTrendingManga } from "@/lib/anilist";
+import { getTrendingGames } from "@/lib/games";
+import { getTrendingBooks } from "@/lib/books";
+import { getTrendingMusic } from "@/lib/music";
+import { isAnimeMedia } from "@/lib/media";
 import { airingIn, STATUS_COLORS } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -26,14 +31,23 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 /* --------------------------------------------------------------------------- */
 
 async function Landing() {
-  const [movies, tv, top] = await Promise.all([getTrending("movie"), getTrending("tv"), getCuratedList("movie", "top_rated")]);
+  const [movies, tv, anime, manga, books, music, games, top] = await Promise.all([
+    getTrending("movie"),
+    getTrending("tv"),
+    getTrendingAnime(),
+    getTrendingManga(),
+    getTrendingBooks(),
+    getTrendingMusic(),
+    getTrendingGames(),
+    getCuratedList("movie", "top_rated"),
+  ]);
   const features = [
-    { icon: ListChecks, title: "Track everything", text: "Keep every movie and show you watch, plan or drop in one beautiful list, with episode progress." },
-    { icon: NotebookPen, title: "Keep a diary", text: "Log each viewing with a date, half-star rating and notes, then look back on your year." },
-    { icon: BarChart3, title: "See your stats", text: "Hours watched, favourite genres, actors and directors, score distributions and more." },
-    { icon: Users, title: "Follow friends", text: "See what your friends are watching, like and reply to their activity, and share lists." },
+    { icon: ListChecks, title: "Track everything", text: "Keep every movie, show, anime, manga, book, album and game you watch, read, play or listen to in one list." },
+    { icon: NotebookPen, title: "Keep a diary", text: "Log each viewing, reading or listening session with dates, ratings and notes, then look back on your year." },
+    { icon: BarChart3, title: "See your stats", text: "Hours watched and listened, pages read, games played, favourite genres, creators and score distributions." },
+    { icon: Users, title: "Follow friends", text: "See what your friends are watching, reading and playing, like and reply to their activity, and share lists." },
     { icon: MessagesSquare, title: "Review & discuss", text: "Write reviews, rate others' as helpful, and join forum threads for every title." },
-    { icon: Sparkles, title: "Discover", text: "Browse trending, airing and top-rated titles with powerful filters and streaming info." },
+    { icon: Sparkles, title: "Discover", text: "Browse trending, airing and top-rated titles across movies, TV, anime, manga, books, music and video games." },
   ];
   const hero = movies.results.find((m) => m.backdropPath);
 
@@ -46,11 +60,11 @@ async function Landing() {
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-nav/40 via-nav/80 to-nav" />
         <div className="container-page relative py-16 text-center md:py-24">
-          <h1 className="mx-auto max-w-3xl text-[32px] leading-tight font-extrabold text-white md:text-[48px]">
-            The social way to track <span className="text-accent">movies</span> &amp; <span className="text-accent">TV</span>
+          <h1 className="mx-auto max-w-4xl text-[32px] leading-tight font-extrabold text-white md:text-[48px]">
+            The social tracker for <span className="text-accent">movies</span>, <span className="text-accent">TV</span>, <span className="text-accent">anime</span>, <span className="text-accent">manga</span>, <span className="text-accent">books</span>, <span className="text-accent">music</span> &amp; <span className="text-accent">games</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] text-nav-text md:text-[17px]">
-            Track what you watch, log a diary, rate and review, build lists, see your stats, and discover what to watch next with friends.
+            Track what you watch, read, play and listen to, log a diary, rate and review, build lists, see your stats, and discover what to experience next with friends.
           </p>
           <div className="mt-8 flex justify-center gap-3">
             <Link href="/signup" className="btn btn-primary px-7 py-3 text-[15px]">
@@ -87,6 +101,56 @@ async function Landing() {
           <SectionHeader title="Trending TV" href="/search/tv?list=trending" />
           <MediaGrid>
             {tv.results.slice(0, 6).map((m, i) => (
+              <div key={m.id} className={i >= 3 ? "hidden sm:block" : undefined}>
+                <MediaCard media={m} />
+              </div>
+            ))}
+          </MediaGrid>
+        </section>
+        <section>
+          <SectionHeader title="Trending Anime" href="/search/anime?list=trending" />
+          <MediaGrid>
+            {anime.results.slice(0, 6).map((m, i) => (
+              <div key={m.id} className={i >= 3 ? "hidden sm:block" : undefined}>
+                <MediaCard media={m} />
+              </div>
+            ))}
+          </MediaGrid>
+        </section>
+        <section>
+          <SectionHeader title="Trending Manga" href="/search/manga?list=trending" />
+          <MediaGrid>
+            {manga.results.slice(0, 6).map((m, i) => (
+              <div key={m.id} className={i >= 3 ? "hidden sm:block" : undefined}>
+                <MediaCard media={m} />
+              </div>
+            ))}
+          </MediaGrid>
+        </section>
+        <section>
+          <SectionHeader title="Trending Books" href="/search/book?list=trending" />
+          <MediaGrid>
+            {books.results.slice(0, 6).map((m, i) => (
+              <div key={m.id} className={i >= 3 ? "hidden sm:block" : undefined}>
+                <MediaCard media={m} />
+              </div>
+            ))}
+          </MediaGrid>
+        </section>
+        <section>
+          <SectionHeader title="Top Albums" href="/search/music?list=trending" />
+          <MediaGrid>
+            {music.results.slice(0, 6).map((m, i) => (
+              <div key={m.id} className={i >= 3 ? "hidden sm:block" : undefined}>
+                <MediaCard media={m} />
+              </div>
+            ))}
+          </MediaGrid>
+        </section>
+        <section>
+          <SectionHeader title="Popular Games" href="/search/game" />
+          <MediaGrid>
+            {games.results.slice(0, 6).map((m, i) => (
               <div key={m.id} className={i >= 3 ? "hidden sm:block" : undefined}>
                 <MediaCard media={m} />
               </div>
@@ -139,8 +203,13 @@ async function Dashboard({
     }),
   ]);
 
-  const shows = inProgress.filter((r) => r.media.type === "tv");
-  const movies = inProgress.filter((r) => r.media.type === "movie");
+  const shows = inProgress.filter((r) => r.media.type === "tv" && !isAnimeMedia(r.media));
+  const anime = inProgress.filter((r) => r.media.type === "anime" || (r.media.type === "tv" && isAnimeMedia(r.media)));
+  const manga = inProgress.filter((r) => r.media.type === "manga");
+  const books = inProgress.filter((r) => r.media.type === "book");
+  const music = inProgress.filter((r) => r.media.type === "music");
+  const games = inProgress.filter((r) => r.media.type === "game");
+  const movies = inProgress.filter((r) => r.media.type === "movie" && !isAnimeMedia(r.media));
   const airing = shows
     .filter((r) => r.media.nextEpisodeAirDate && airingIn(r.media.nextEpisodeAirDate))
     .sort((a, b) => (a.media.nextEpisodeAirDate ?? "").localeCompare(b.media.nextEpisodeAirDate ?? ""));
@@ -169,7 +238,7 @@ async function Dashboard({
       {welcome && (
         <div className="card mb-8 flex flex-wrap items-center justify-between gap-4 border-l-4 border-accent p-5">
           <div>
-            <p className="text-[16px] font-bold text-bright">Welcome to tvlist, {viewer.displayUsername || viewer.username}! 🎬</p>
+            <p className="text-[16px] font-bold text-bright">Welcome to Omnilist, {viewer.displayUsername || viewer.username}! 🎬</p>
             <p className="mt-1 text-[13px] text-text-light">Start by adding a few movies and shows you love, then customise your profile.</p>
           </div>
           <div className="flex gap-2">
@@ -188,6 +257,36 @@ async function Dashboard({
             <section>
               <SectionHeader title="TV In Progress" href={`/user/${viewer.username}/tvlist`} />
               <InProgress items={shows.map(toItem)} />
+            </section>
+          )}
+          {anime.length > 0 && (
+            <section>
+              <SectionHeader title="Anime In Progress" href={`/user/${viewer.username}/animelist`} />
+              <InProgress items={anime.map(toItem)} />
+            </section>
+          )}
+          {manga.length > 0 && (
+            <section>
+              <SectionHeader title="Manga Reading" href={`/user/${viewer.username}/mangalist`} />
+              <InProgress items={manga.map(toItem)} />
+            </section>
+          )}
+          {books.length > 0 && (
+            <section>
+              <SectionHeader title="Books Reading" href={`/user/${viewer.username}/booklist`} />
+              <InProgress items={books.map(toItem)} />
+            </section>
+          )}
+          {music.length > 0 && (
+            <section>
+              <SectionHeader title="Music Listening" href={`/user/${viewer.username}/musiclist`} />
+              <InProgress items={music.map(toItem)} />
+            </section>
+          )}
+          {games.length > 0 && (
+            <section>
+              <SectionHeader title="Games Playing" href={`/user/${viewer.username}/gamelist`} />
+              <InProgress items={games.map(toItem)} />
             </section>
           )}
           {movies.length > 0 && (

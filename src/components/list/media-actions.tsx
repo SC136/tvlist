@@ -67,17 +67,47 @@ function LogModal({ media, onClose }: { media: ActionMedia; onClose: () => void 
       setTimeout(onClose, 700);
     });
 
+  const isGame = media.type === "game";
+  const isManga = media.type === "manga";
+  const isBook = media.type === "book";
+  const isMusic = media.type === "music";
+  const labelModal = isGame
+    ? "Log a gameplay session"
+    : isManga || isBook
+      ? "Log a reading session"
+      : isMusic
+        ? "Log an album listen"
+        : "Log a viewing";
+  const labelAction = isGame
+    ? "I played…"
+    : isManga || isBook
+      ? "I read…"
+      : isMusic
+        ? "I listened to…"
+        : "I watched…";
+  const labelDate = isGame
+    ? "Played on"
+    : isManga || isBook
+      ? "Read on"
+      : isMusic
+        ? "Listened on"
+        : "Watched on";
+
   return (
-    <Modal open onClose={onClose} label="Log a viewing" className="max-w-[520px] bg-fg">
+    <Modal open onClose={onClose} label={labelModal} className="max-w-[520px] bg-fg">
       <div className="p-6">
-        <p className="text-[12px] font-bold tracking-wide text-text-lighter uppercase">I watched…</p>
+        <p className="text-[12px] font-bold tracking-wide text-text-lighter uppercase">
+          {labelAction}
+        </p>
         <h2 className="mt-1 text-[18px] font-bold text-bright">
           {media.title} {media.year && <span className="font-normal text-text-lighter">{media.year}</span>}
         </h2>
         <div className="mt-6 grid gap-5">
           <div className="grid grid-cols-2 gap-4">
             <label className="block">
-              <span className="mb-2 block text-[13px] font-semibold text-text-light">Watched on</span>
+              <span className="mb-2 block text-[13px] font-semibold text-text-light">
+                {labelDate}
+              </span>
               <input type="date" value={date} max={todayIso()} onChange={(e) => setDate(e.target.value)} className="input-grey" />
             </label>
             {media.type === "tv" && media.seasons.length > 0 && (
@@ -110,7 +140,7 @@ function LogModal({ media, onClose }: { media: ActionMedia; onClose: () => void 
               </button>
               <label className="flex items-center gap-2 text-[13px] font-semibold">
                 <input type="checkbox" checked={rewatch} onChange={(e) => setRewatch(e.target.checked)} className="h-4 w-4 accent-[rgb(var(--accent))]" />
-                Rewatch
+                {isGame ? "Replay" : isManga || isBook ? "Reread" : isMusic ? "Relisten" : "Rewatch"}
               </label>
             </div>
           </div>

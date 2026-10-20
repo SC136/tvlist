@@ -15,6 +15,20 @@
       "when": 1790883550292,
       "tag": "0001_profile_color_auto",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791839413403,
+      "tag": "0002_add_anime_game_media_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792533892511,
+      "tag": "0003_add_manga_book_music_and_customization",
+      "breakpoints": true
     }
   ]
 }

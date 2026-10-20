@@ -7,7 +7,7 @@ import { ColumnChart, Distribution, RankTable } from "@/components/user/stat-cha
 import { getProfile } from "@/lib/queries/profile";
 import { computeStats, getUserList } from "@/lib/queries/user-stats";
 import { formatDays, formatNumber, STATUS_COLORS, statusLabel, type ListStatus } from "@/lib/format";
-import { countryName } from "@/lib/media";
+import { countryName, type MediaCategory } from "@/lib/media";
 import { cn } from "@/lib/cn";
 
 export async function generateMetadata({ params }: PageProps<"/user/[username]/stats">): Promise<Metadata> {
@@ -34,7 +34,20 @@ export default async function UserStatsPage({ params, searchParams }: PageProps<
   const sp = await searchParams;
   const profile = await getProfile(username);
   if (!profile) notFound();
-  const type = sp.type === "tv" ? "tv" : "movie";
+  const type: MediaCategory =
+    sp.type === "tv"
+      ? "tv"
+      : sp.type === "anime"
+        ? "anime"
+        : sp.type === "manga"
+          ? "manga"
+          : sp.type === "book"
+            ? "book"
+            : sp.type === "music"
+              ? "music"
+              : sp.type === "game"
+                ? "game"
+                : "movie";
   const section = SECTIONS.find((s) => s.key === sp.section)?.key ?? "overview";
   const rows = await getUserList(profile.user.id, type, profile.isSelf);
   const s = computeStats(rows, type);
@@ -51,22 +64,67 @@ export default async function UserStatsPage({ params, searchParams }: PageProps<
           { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
           { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
         ]
-      : [
-          { label: "Total Shows", value: formatNumber(s.total) },
-          { label: "Episodes Watched", value: formatNumber(s.episodes) },
-          { label: "Days Watched", value: formatDays(s.minutes) },
-          { label: "Days Planned", value: formatDays(s.planningMinutes) },
-          { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
-          { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
-        ];
+      : type === "game"
+        ? [
+            { label: "Total Games", value: formatNumber(s.total) },
+            { label: "Hours Played", value: formatNumber(Math.round(s.minutes / 60)) },
+            { label: "Days Played", value: formatDays(s.minutes) },
+            { label: "Days Backlog", value: formatDays(s.planningMinutes) },
+            { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
+            { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
+          ]
+      : type === "book"
+        ? [
+            { label: "Total Books", value: formatNumber(s.total) },
+            { label: "Pages Read", value: formatNumber(s.episodes) },
+            { label: "Days Read", value: formatDays(s.minutes) },
+            { label: "Days Planned", value: formatDays(s.planningMinutes) },
+            { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
+            { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
+          ]
+      : type === "music"
+        ? [
+            { label: "Total Albums", value: formatNumber(s.total) },
+            { label: "Tracks Listened", value: formatNumber(s.episodes) },
+            { label: "Hours Listened", value: formatNumber(Math.round(s.minutes / 60)) },
+            { label: "Days Listened", value: formatDays(s.minutes) },
+            { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
+            { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
+          ]
+      : type === "manga"
+        ? [
+            { label: "Total Manga", value: formatNumber(s.total) },
+            { label: "Chapters Read", value: formatNumber(s.episodes) },
+            { label: "Days Read", value: formatDays(s.minutes) },
+            { label: "Days Planned", value: formatDays(s.planningMinutes) },
+            { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
+            { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
+          ]
+        : type === "anime"
+          ? [
+              { label: "Total Anime", value: formatNumber(s.total) },
+              { label: "Episodes Watched", value: formatNumber(s.episodes) },
+              { label: "Days Watched", value: formatDays(s.minutes) },
+              { label: "Days Planned", value: formatDays(s.planningMinutes) },
+              { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
+              { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
+            ]
+          : [
+              { label: "Total Shows", value: formatNumber(s.total) },
+              { label: "Episodes Watched", value: formatNumber(s.episodes) },
+              { label: "Days Watched", value: formatDays(s.minutes) },
+              { label: "Days Planned", value: formatDays(s.planningMinutes) },
+              { label: "Mean Score", value: s.meanScore ? String(s.meanScore) : "–" },
+              { label: "Standard Deviation", value: s.stdDev ? String(s.stdDev) : "–" },
+            ];
 
   return (
     <div className="grid gap-8 md:grid-cols-[200px_1fr]">
       <aside className="space-y-5">
         <div className="flex gap-1 rounded bg-fg p-1 shadow-[var(--shadow-card)] md:flex-col">
-          {(["movie", "tv"] as const).map((t) => (
-            <Link key={t} href={href(t, section)} className={cn("flex-1 rounded px-3 py-1.5 text-[13px] font-semibold", type === t ? "bg-accent text-on-accent" : "hover:text-accent")}>
-              {t === "movie" ? "Movies" : "TV Shows"}
+          {(["movie", "tv", "anime", "manga", "book", "music", "game"] as const).map((t) => (
+            <Link key={t} href={href(t, section)} className={cn("flex-1 rounded px-3 py-1.5 text-[13px] font-semibold capitalize", type === t ? "bg-accent text-on-accent" : "hover:text-accent")}>
+              {t === "movie" ? "Movies" : t === "tv" ? "TV Shows" : t === "anime" ? "Anime" : t === "manga" ? "Manga" : t === "book" ? "Books" : t === "music" ? "Music" : "Games"}
             </Link>
           ))}
         </div>
@@ -88,7 +146,9 @@ export default async function UserStatsPage({ params, searchParams }: PageProps<
 
       <div className="min-w-0 space-y-10">
         {rows.length === 0 ? (
-          <p className="card p-8 text-center text-[13px] text-text-lighter">No {type === "movie" ? "movies" : "shows"} on this list yet.</p>
+          <p className="card p-8 text-center text-[13px] text-text-lighter">
+            No {type === "movie" ? "movies" : type === "game" ? "games" : type === "anime" ? "anime" : "shows"} on this list yet.
+          </p>
         ) : section === "overview" ? (
           <>
             <section className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -104,7 +164,7 @@ export default async function UserStatsPage({ params, searchParams }: PageProps<
               <ColumnChart items={s.scores} colorFor={scoreColor} />
             </section>
             <section>
-              <SectionHeader title={type === "movie" ? "Runtime" : "Episode Count"} />
+              <SectionHeader title={type === "movie" ? "Runtime" : type === "game" ? "Playtime" : "Episode Count"} />
               <ColumnChart items={s.lengths} />
             </section>
             <section className="grid gap-8 xl:grid-cols-2">
@@ -143,12 +203,12 @@ export default async function UserStatsPage({ params, searchParams }: PageProps<
           </section>
         ) : section === "studios" ? (
           <section>
-            <SectionHeader title={type === "movie" ? "Studios" : "Networks"} />
+            <SectionHeader title={type === "movie" ? "Studios" : type === "game" ? "Developers & Publishers" : type === "anime" ? "Animation Studios" : "Networks"} />
             <RankTable items={s.studios} />
           </section>
         ) : (
           <section>
-            <SectionHeader title={section === "cast" ? "Actors" : type === "movie" ? "Directors" : "Creators"} />
+            <SectionHeader title={section === "cast" ? (type === "anime" ? "Voice Actors" : "Actors") : type === "movie" ? "Directors" : type === "game" ? "Developers" : "Creators"} />
             <PeopleGrid items={section === "cast" ? s.cast : s.directors} />
           </section>
         )}

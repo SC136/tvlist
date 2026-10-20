@@ -17,15 +17,34 @@ export function MediaSidebar({ data }: { data: Data }) {
     rows.push(["Airing", `S${next.season} Ep ${next.episode}: ${when ?? formatDate(next.airDate)}`]);
   }
   rows.push(["Format", d.format]);
-  if (d.type === "tv") {
+  if (d.type === "tv" || d.type === "anime") {
     if (d.episodes) rows.push(["Episodes", d.episodes]);
     if (d.seasons) rows.push(["Seasons", d.seasons]);
     if (d.runtime) rows.push(["Episode Duration", formatRuntime(d.runtime)]);
+  } else if (d.type === "manga") {
+    if (d.chapters) rows.push(["Chapters", d.chapters]);
+    if (d.volumes) rows.push(["Volumes", d.volumes]);
+  } else if (d.type === "book") {
+    if (d.pages) rows.push(["Pages", d.pages]);
+  } else if (d.type === "music") {
+    if (d.episodes) rows.push(["Tracks", d.episodes]);
+    if (d.runtime) rows.push(["Total Duration", formatRuntime(d.runtime)]);
+  } else if (d.type === "game") {
+    if (d.runtime) rows.push(["Average Playtime", formatRuntime(d.runtime)]);
+    if (d.platforms?.length) rows.push(["Platforms", d.platforms.join(" · ")]);
   } else if (d.runtime) {
     rows.push(["Runtime", formatRuntime(d.runtime)]);
   }
   rows.push(["Status", d.status]);
-  if (d.date) rows.push([d.type === "tv" ? "Start Date" : "Release Date", formatDate(d.date)]);
+  if (d.date) {
+    const dateLabel =
+      d.type === "tv" || d.type === "anime" || d.type === "manga"
+        ? "Start Date"
+        : d.type === "book"
+          ? "Published"
+          : "Release Date";
+    rows.push([dateLabel, formatDate(d.date)]);
+  }
   if (d.endDate) rows.push(["End Date", formatDate(d.endDate)]);
   if (d.score !== null) rows.push(["Average Score", `${d.score}%`]);
   if (d.voteCount) rows.push(["Votes", formatNumber(d.voteCount)]);
@@ -43,9 +62,40 @@ export function MediaSidebar({ data }: { data: Data }) {
       </span>,
     ]);
   }
-  if (d.studios.length) {
+  if (d.type === "game") {
+    if (d.developers?.length) {
+      rows.push([
+        d.developers.length > 1 ? "Developers" : "Developer",
+        <span key="devs" className="block">
+          {d.developers.map((s) => (
+            <span key={s} className="block">
+              {s}
+            </span>
+          ))}
+        </span>,
+      ]);
+    }
+    if (d.publishers?.length) {
+      rows.push([
+        d.publishers.length > 1 ? "Publishers" : "Publisher",
+        <span key="pubs" className="block">
+          {d.publishers.map((s) => (
+            <span key={s} className="block">
+              {s}
+            </span>
+          ))}
+        </span>,
+      ]);
+    }
+  } else if (d.studios.length) {
     rows.push([
-      "Studios",
+      d.type === "manga"
+        ? "Serialization"
+        : d.type === "book"
+          ? "Publisher"
+          : d.type === "music"
+            ? "Record Label"
+            : "Studios",
       <span key="s" className="block">
         {d.studios.slice(0, 5).map((s) => (
           <span key={s} className="block">
@@ -55,15 +105,29 @@ export function MediaSidebar({ data }: { data: Data }) {
       </span>,
     ]);
   }
-  if (d.creators.length) {
+  if (d.type !== "game" && d.creators.length) {
     rows.push([
-      d.type === "movie" ? "Director" : "Created By",
+      d.type === "movie"
+        ? "Director"
+        : d.type === "manga"
+          ? "Authors / Artists"
+          : d.type === "book"
+            ? "Author"
+            : d.type === "music"
+              ? "Artist"
+              : "Created By",
       <span key="c" className="block">
-        {d.creators.map((c) => (
-          <Link key={c.id} href={`/person/${c.id}`} className="block text-accent hover:underline">
-            {c.name}
-          </Link>
-        ))}
+        {d.creators.map((c) =>
+          d.type === "movie" || d.type === "tv" ? (
+            <Link key={c.id} href={`/person/${c.id}`} className="block text-accent hover:underline">
+              {c.name}
+            </Link>
+          ) : (
+            <span key={c.id} className="block">
+              {c.name}
+            </span>
+          ),
+        )}
       </span>,
     ]);
   }
@@ -87,8 +151,22 @@ export function MediaSidebar({ data }: { data: Data }) {
 
   const links: { href: string; label: string }[] = [];
   if (d.homepage) links.push({ href: d.homepage, label: "Official Site" });
-  if (d.externalIds.imdb) links.push({ href: `https://www.imdb.com/title/${d.externalIds.imdb}/`, label: "IMDb" });
-  links.push({ href: `https://www.themoviedb.org/${d.type}/${d.id}`, label: "TMDB" });
+  if (d.type === "movie" || d.type === "tv") {
+    if (d.externalIds.imdb) links.push({ href: `https://www.imdb.com/title/${d.externalIds.imdb}/`, label: "IMDb" });
+    links.push({ href: `https://www.themoviedb.org/${d.type}/${d.id}`, label: "TMDB" });
+  } else if (d.type === "anime") {
+    links.push({ href: `https://anilist.co/anime/${d.id}`, label: "AniList" });
+  } else if (d.type === "manga") {
+    links.push({ href: `https://anilist.co/manga/${d.id}`, label: "AniList" });
+  } else if (d.type === "book") {
+    if (d.externalIds.openlibrary) links.push({ href: d.externalIds.openlibrary, label: "Open Library" });
+  } else if (d.type === "music") {
+    if (d.externalIds.appleMusic) links.push({ href: d.externalIds.appleMusic, label: "Apple Music" });
+  } else if (d.type === "game") {
+    links.push({ href: d.externalIds.rawg || `https://rawg.io/games/${d.id}`, label: "RAWG" });
+    if (d.externalIds.metacritic) links.push({ href: d.externalIds.metacritic, label: "Metacritic" });
+    if (d.externalIds.reddit) links.push({ href: d.externalIds.reddit, label: "Reddit" });
+  }
   if (d.externalIds.wikidata) links.push({ href: `https://www.wikidata.org/wiki/${d.externalIds.wikidata}`, label: "Wikidata" });
   if (d.externalIds.instagram) links.push({ href: `https://www.instagram.com/${d.externalIds.instagram}/`, label: "Instagram" });
   if (d.externalIds.twitter) links.push({ href: `https://x.com/${d.externalIds.twitter}`, label: "X / Twitter" });

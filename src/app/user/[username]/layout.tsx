@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Settings } from "lucide-react";
+import { Globe, MapPin, Settings } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { NavTabs } from "@/components/ui/nav-tabs";
 import { FollowButton } from "@/components/user/follow-button";
@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: LayoutProps<"/user/[username]
   const profile = await getProfile(username);
   if (!profile) return { title: "User not found" };
   return {
-    title: { default: profile.name, template: "%s · tvlist" },
-    description: profile.user.about?.slice(0, 160) || `${profile.name}'s movie and TV lists on tvlist.`,
+    title: { default: profile.name, template: "%s · Omnilist" },
+    description: profile.user.about?.slice(0, 160) || `${profile.name}'s profile on Omnilist.`,
   };
 }
 
@@ -29,6 +29,11 @@ export default async function UserLayout({ params, children }: LayoutProps<"/use
     { href: base, label: "Overview", exact: true },
     { href: `${base}/movielist`, label: "Movie List" },
     { href: `${base}/tvlist`, label: "TV List" },
+    { href: `${base}/animelist`, label: "Anime List" },
+    { href: `${base}/mangalist`, label: "Manga List" },
+    { href: `${base}/booklist`, label: "Book List" },
+    { href: `${base}/musiclist`, label: "Music List" },
+    { href: `${base}/gamelist`, label: "Game List" },
     { href: `${base}/diary`, label: "Diary" },
     { href: `${base}/favorites`, label: "Favorites" },
     { href: `${base}/stats`, label: "Stats" },
@@ -62,15 +67,42 @@ export default async function UserLayout({ params, children }: LayoutProps<"/use
             />
             <div className="min-w-0 pb-2">
               <h1 className="truncate text-[20px] font-bold text-white drop-shadow md:text-[26px]">{name}</h1>
-              <p className="text-[12px] font-semibold text-white/75 md:text-[13px]">
+              {user.statusQuote && (
+                <p className="mt-0.5 line-clamp-1 text-[13px] font-medium text-white/90 drop-shadow">
+                  “{user.statusQuote}”
+                </p>
+              )}
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-white/75 md:text-[13px]">
                 <Link href={`${base}/social?tab=followers`} className="hover:text-white">
                   {profile.followers} {profile.followers === 1 ? "follower" : "followers"}
-                </Link>{" "}
-                ·{" "}
+                </Link>
+                <span>·</span>
                 <Link href={`${base}/social?tab=following`} className="hover:text-white">
                   {profile.following} following
                 </Link>
-              </p>
+                {user.location && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {user.location}
+                    </span>
+                  </>
+                )}
+                {user.website && (
+                  <>
+                    <span>·</span>
+                    <a
+                      href={user.website}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="flex items-center gap-1 hover:text-white"
+                    >
+                      <Globe className="h-3.5 w-3.5" />
+                      {user.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                    </a>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="pb-2">

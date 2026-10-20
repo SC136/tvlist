@@ -8,11 +8,12 @@ import { recordListActivity } from "@/lib/activity";
 import { getViewer } from "@/lib/session";
 import { ensureMedia } from "@/lib/queries/media";
 import { LIST_STATUSES, todayIso, type ListStatus } from "@/lib/format";
+import type { MediaType } from "@/lib/media";
 
 export type ActionResult<T = undefined> = { ok: true; data?: T } | { ok: false; error: string };
 
 const mediaRef = z.object({
-  type: z.enum(["movie", "tv"]),
+  type: z.enum(["movie", "tv", "anime", "game", "manga", "book", "music"]),
   tmdbId: z.number().int().positive(),
 });
 
@@ -133,7 +134,7 @@ export async function saveListEntry(raw: EntryInput): Promise<ActionResult<Saved
 }
 
 /** One-click status from the "Add to List" dropdown, keeping existing fields. */
-export async function setListStatus(raw: { type: "movie" | "tv"; tmdbId: number; status: ListStatus }): Promise<ActionResult<SavedEntry>> {
+export async function setListStatus(raw: { type: MediaType; tmdbId: number; status: ListStatus }): Promise<ActionResult<SavedEntry>> {
   const viewer = await getViewer();
   if (!viewer) return { ok: false, error: "Please log in first." };
   const parsed = mediaRef.extend({ status: z.enum(LIST_STATUSES as [ListStatus, ...ListStatus[]]) }).safeParse(raw);
@@ -160,7 +161,7 @@ export async function setListStatus(raw: { type: "movie" | "tv"; tmdbId: number;
 }
 
 /** "+1" episode from progress widgets. */
-export async function incrementProgress(raw: { type: "movie" | "tv"; tmdbId: number }): Promise<ActionResult<SavedEntry>> {
+export async function incrementProgress(raw: { type: MediaType; tmdbId: number }): Promise<ActionResult<SavedEntry>> {
   const viewer = await getViewer();
   if (!viewer) return { ok: false, error: "Please log in first." };
   const parsed = mediaRef.safeParse(raw);
@@ -190,7 +191,7 @@ export async function incrementProgress(raw: { type: "movie" | "tv"; tmdbId: num
   return result;
 }
 
-export async function deleteListEntry(raw: { type: "movie" | "tv"; tmdbId: number }): Promise<ActionResult> {
+export async function deleteListEntry(raw: { type: MediaType; tmdbId: number }): Promise<ActionResult> {
   const viewer = await getViewer();
   if (!viewer) return { ok: false, error: "Please log in first." };
   const parsed = mediaRef.safeParse(raw);
@@ -207,7 +208,7 @@ export async function deleteListEntry(raw: { type: "movie" | "tv"; tmdbId: numbe
   return { ok: true };
 }
 
-export async function toggleFavourite(raw: { type: "movie" | "tv"; tmdbId: number }): Promise<ActionResult<{ favourite: boolean }>> {
+export async function toggleFavourite(raw: { type: MediaType; tmdbId: number }): Promise<ActionResult<{ favourite: boolean }>> {
   const viewer = await getViewer();
   if (!viewer) return { ok: false, error: "Please log in first." };
   const parsed = mediaRef.safeParse(raw);

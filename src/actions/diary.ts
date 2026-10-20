@@ -12,7 +12,7 @@ import { todayIso } from "@/lib/format";
 import type { ActionResult } from "./list";
 
 const logInput = z.object({
-  type: z.enum(["movie", "tv"]),
+  type: z.enum(["movie", "tv", "anime", "game", "manga", "book", "music"]),
   tmdbId: z.number().int().positive(),
   watchedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   score: z.number().int().min(0).max(100),

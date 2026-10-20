@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[type]/[id]">):
   const title = details.year ? `${details.title} (${details.year})` : details.title;
   const image = tmdbImage(details.backdropPath, "w1280") ?? tmdbImage(details.posterPath, "w500");
   return {
-    title: { default: title, template: "%s · tvlist" },
+    title: { default: title, template: "%s · Omnilist" },
     description: details.overview.slice(0, 200) || undefined,
     openGraph: { title, description: details.overview.slice(0, 200), images: image ? [image] : undefined },
   };
@@ -41,8 +41,12 @@ export default async function MediaLayout({ params, children }: LayoutProps<"/[t
   const tabs = [
     { href: base, label: "Overview", exact: true },
     ...(type === "tv" ? [{ href: `${base}/seasons`, label: "Seasons" }] : []),
-    { href: `${base}/cast`, label: "Cast" },
-    { href: `${base}/crew`, label: "Crew" },
+    ...(type === "movie" || type === "tv" || type === "anime" || type === "manga"
+      ? [
+          { href: `${base}/cast`, label: type === "manga" ? "Characters" : "Cast" },
+          { href: `${base}/crew`, label: type === "manga" ? "Staff" : "Crew" },
+        ]
+      : []),
     { href: `${base}/stats`, label: "Stats" },
     { href: `${base}/social`, label: "Social" },
     { href: `${base}/reviews`, label: "Reviews" },
@@ -90,7 +94,17 @@ export default async function MediaLayout({ params, children }: LayoutProps<"/[t
           </div>
           <div className="min-w-0 py-4 md:py-6">
             <h1 className="text-[18px] leading-tight font-bold text-bright md:text-[22px]">{details.title}</h1>
-            {details.tagline && <p className="mt-1 text-[13px] text-text-lighter italic">{details.tagline}</p>}
+            {details.type === "game" && details.platforms && details.platforms.length > 0 ? (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {details.platforms.map((p) => (
+                  <span key={p} className="rounded bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-text-light">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            ) : details.tagline ? (
+              <p className="mt-1 text-[13px] text-text-lighter italic">{details.tagline}</p>
+            ) : null}
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px] font-semibold text-text-lighter md:hidden">
               <span>{details.format}</span>
               {details.year && <span>{details.year}</span>}

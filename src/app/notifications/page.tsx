@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Cover } from "@/components/ui/cover";
 import { Empty, Page, Pagination, TimeAgo } from "@/components/ui/basics";
 import { getViewer } from "@/lib/session";
+import type { MediaType } from "@/lib/media";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = { title: "Notifications" };
@@ -105,7 +106,7 @@ function describe(
   item: {
     activityId: number | null;
     context: string | null;
-    media: { type: "movie" | "tv"; tmdbId: number; title: string } | null;
+    media: { type: MediaType; tmdbId: number; title: string } | null;
     thread: { id: number; title: string } | null;
     collection: { id: number; title: string } | null;
     actor: { username: string | null } | null;

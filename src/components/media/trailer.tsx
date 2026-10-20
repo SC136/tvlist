@@ -29,7 +29,7 @@ export function Trailer({ videoKey, title }: { videoKey: string; title: string }
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`https://i.ytimg.com/vi/${encodeURIComponent(videoKey)}/hqdefault.jpg`} alt="" className="h-full w-full object-cover" loading="lazy" />
       <span className="absolute inset-0 flex items-center justify-center bg-black/30 transition group-hover:bg-black/40">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-red text-white shadow-lg transition group-hover:scale-110">
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-on-accent shadow-lg transition duration-200 group-hover:scale-110">
           <Play className="ml-1 h-7 w-7" fill="currentColor" />
         </span>
       </span>

@@ -5,9 +5,17 @@ import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { getViewer } from "@/lib/session";
-import { imageUrlSchema, PROFILE_COLORS, usernameSchema } from "@/lib/validation";
+import {
+  DEFAULT_PROFILE_TABS,
+  imageUrlSchema,
+  PROFILE_COLORS,
+  usernameSchema,
+  websiteSchema,
+} from "@/lib/validation";
 import { SCORE_FORMATS } from "@/lib/format";
 import type { ActionResult } from "./list";
+
+const tabValues = DEFAULT_PROFILE_TABS.map((t) => t.value) as [string, ...string[]];
 
 const profileInput = z.object({
   displayName: z.string().trim().max(30),
@@ -15,6 +23,10 @@ const profileInput = z.object({
   image: imageUrlSchema,
   bannerImage: imageUrlSchema,
   profileColor: z.enum(PROFILE_COLORS),
+  statusQuote: z.string().trim().max(120).nullable().optional(),
+  location: z.string().trim().max(60).nullable().optional(),
+  website: websiteSchema,
+  defaultTab: z.enum(tabValues).default("overview"),
 });
 
 export async function updateProfile(raw: z.input<typeof profileInput>): Promise<ActionResult> {
@@ -35,6 +47,10 @@ export async function updateProfile(raw: z.input<typeof profileInput>): Promise<
       image: parsed.data.image,
       bannerImage: parsed.data.bannerImage,
       profileColor: parsed.data.profileColor,
+      statusQuote: parsed.data.statusQuote?.trim() || null,
+      location: parsed.data.location?.trim() || null,
+      website: parsed.data.website,
+      defaultTab: parsed.data.defaultTab,
       updatedAt: new Date(),
     })
     .where(eq(schema.user.id, viewer.id));

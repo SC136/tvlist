@@ -8,6 +8,7 @@ import { getViewer, isModerator } from "@/lib/session";
 import { ensureMedia, findMedia } from "@/lib/queries/media";
 import { notify } from "@/lib/notify";
 import { withinLimit } from "@/lib/rate-limit";
+import type { MediaType } from "@/lib/media";
 import type { ActionResult } from "./list";
 
 const meta = z.object({
@@ -17,14 +18,14 @@ const meta = z.object({
   private: z.boolean(),
 });
 
-const mediaRef = z.object({ type: z.enum(["movie", "tv"]), tmdbId: z.number().int().positive() });
+const mediaRef = z.object({ type: z.enum(["movie", "tv", "anime", "game", "manga", "book", "music"]), tmdbId: z.number().int().positive() });
 
 async function owned(collectionId: number, userId: string) {
   const row = await db.query.collection.findFirst({ where: eq(schema.collection.id, Number(collectionId)) });
   return row && row.userId === userId ? row : null;
 }
 
-export async function createCollection(raw: z.infer<typeof meta>, first?: { type: "movie" | "tv"; tmdbId: number }): Promise<ActionResult<{ id: number }>> {
+export async function createCollection(raw: z.infer<typeof meta>, first?: { type: MediaType; tmdbId: number }): Promise<ActionResult<{ id: number }>> {
   const viewer = await getViewer();
   if (!viewer) return { ok: false, error: "Please log in first." };
   const parsed = meta.safeParse(raw);
@@ -72,7 +73,7 @@ export async function deleteCollection(id: number): Promise<ActionResult> {
 }
 
 /** The viewer's lists with whether each contains the given title (for the "Add to list" picker). */
-export async function myCollectionsFor(raw: { type: "movie" | "tv"; tmdbId: number }) {
+export async function myCollectionsFor(raw: { type: MediaType; tmdbId: number }) {
   const viewer = await getViewer();
   if (!viewer) return [];
   const parsed = mediaRef.safeParse(raw);
@@ -101,7 +102,7 @@ export async function myCollectionsFor(raw: { type: "movie" | "tv"; tmdbId: numb
 
 export async function toggleInCollection(
   collectionId: number,
-  raw: { type: "movie" | "tv"; tmdbId: number },
+  raw: { type: MediaType; tmdbId: number },
   mode: "toggle" | "add" = "toggle",
 ): Promise<ActionResult<{ added: boolean; mediaId: number }>> {
   const viewer = await getViewer();

@@ -10,7 +10,7 @@ import { withinLimit } from "@/lib/rate-limit";
 import type { ActionResult } from "./list";
 
 const reviewInput = z.object({
-  type: z.enum(["movie", "tv"]),
+  type: z.enum(["movie", "tv", "anime", "game", "manga", "book", "music"]),
   tmdbId: z.number().int().positive(),
   summary: z.string().trim().min(20, "Summary must be at least 20 characters.").max(140, "Summary must be at most 140 characters."),
   body: z.string().trim().min(200, "Reviews need at least 200 characters.").max(30000, "That review is too long."),

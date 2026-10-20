@@ -81,7 +81,13 @@ export function AddToList({
                   quick("PLANNING");
                 }}
               >
-                Set as Planning
+                {media.type === "game"
+                  ? "Set as Backlog"
+                  : media.type === "book"
+                    ? "Set as Want to Read"
+                    : media.type === "music"
+                      ? "Set as Want to Listen"
+                      : "Set as Planning"}
               </DropdownItem>
               <DropdownItem
                 onClick={() => {
@@ -89,7 +95,15 @@ export function AddToList({
                   quick(media.type === "movie" ? "COMPLETED" : "CURRENT");
                 }}
               >
-                {media.type === "movie" ? "Set as Completed" : "Set as Watching"}
+                {media.type === "movie"
+                  ? "Set as Completed"
+                  : media.type === "game"
+                    ? "Set as Playing"
+                    : media.type === "manga" || media.type === "book"
+                      ? "Set as Reading"
+                      : media.type === "music"
+                        ? "Set as Listening"
+                        : "Set as Watching"}
               </DropdownItem>
               <DropdownItem
                 onClick={() => {

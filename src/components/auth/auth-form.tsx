@@ -74,7 +74,7 @@ export function AuthForm({ mode, providers }: { mode: Mode; providers: ("google"
 
   return (
     <div className="card mx-auto w-full max-w-[440px] px-6 py-10 sm:px-10">
-      <h1 className="mb-8 text-center text-[22px] font-bold text-bright">{mode === "login" ? "Login" : "Sign up to tvlist"}</h1>
+      <h1 className="mb-8 text-center text-[22px] font-bold text-bright">{mode === "login" ? "Login" : "Sign up to Omnilist"}</h1>
       {/* method="post" so a submit before hydration never puts credentials in the URL. */}
       <form onSubmit={onSubmit} method="post" className="space-y-4" noValidate>
         {mode === "signup" && (

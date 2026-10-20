@@ -1,18 +1,18 @@
-# tvlist
+# Omnilist
 
-A social tracker for **movies and TV shows**: lists with progress and scores, a viewing diary, reviews, custom lists, stats, and a community feed.
+A unified social tracker for **movies, TV shows, anime, manga, books, music and video games**: lists with progress and scores, an experience diary, reviews, custom lists, deep stats, and a community feed.
 
-- **Lists**: Watching / Planning / Completed / Rewatching / Paused / Dropped, with episode progress, dates, rewatches, private notes and five scoring systems (100, 10.0, 10, 5 stars, smileys)
-- **Diary**: log every viewing with a date, half-star rating, like and rewatch (Letterboxd style)
-- **Reviews** with helpfulness voting, **custom ranked lists**, **favourites** (titles and people)
+- **Lists**: Watching / Reading / Playing / Listening / Planning / Completed / Rewatching / Paused / Dropped, with episode/chapter/page progress, dates, rewatches, private notes and five scoring systems (100, 10.0, 10, 5 stars, smileys)
+- **Diary**: log every viewing, reading, listening or playthrough with a date, rating, like and rewatch/reread/relisten/replay (Letterboxd style)
+- **Reviews** with helpfulness voting, **custom ranked lists**, **favourites** across all 7 media types
 - **Social**: activity feed, status posts, profile messages, likes, replies, @mentions, follows, notifications
-- **Profiles**: banner, avatar, profile colour, activity heatmap, and a full stats page (genres, actors, directors, studios, release/watch years)
-- **Discovery**: trending / airing / top-rated, filters (genre, year, format, status, country, language, streaming service), airing schedule, "where to watch"
-- **Forum** with categories, threads linked to titles, nested comments, pin/lock for moderators
+- **Profiles**: banner, avatar, profile colour, activity heatmap, and a full stats page (genres, creators, studios, release/experience years)
+- **Discovery**: trending / airing / top-rated across movies, TV, anime, manga, books, music and games with rich filters, airing schedule, "where to watch"
+- **Forum** with categories (Movies, TV, Anime, Manga, Books, Music, Games, etc.), threads linked to titles, nested comments, pin/lock for moderators
 - **Letterboxd import** (diary/ratings/watched/watchlist CSVs) and full JSON export
 - Light and dark modes with **seven colour palettes** users can switch between, mobile friendly
 
-Movie and TV data comes from [TMDB](https://www.themoviedb.org/).
+Media data provided by [TMDB](https://www.themoviedb.org/) (Movies & TV), [AniList](https://anilist.co/) (Anime & Manga), [Open Library](https://openlibrary.org/) (Books), [Apple Music / iTunes](https://www.apple.com/itunes/) (Music), and [RAWG](https://rawg.io/) / Steam (Games).
 
 ## Stack
 

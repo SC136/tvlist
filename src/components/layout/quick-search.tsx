@@ -54,6 +54,11 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
     return [
       ...visible.movies.map((m) => ({ href: `/movie/${m.id}`, key: `m${m.id}` })),
       ...visible.tv.map((m) => ({ href: `/tv/${m.id}`, key: `t${m.id}` })),
+      ...visible.anime.map((a) => ({ href: `/anime/${a.id}`, key: `a${a.id}` })),
+      ...visible.manga.map((m) => ({ href: `/manga/${m.id}`, key: `mg${m.id}` })),
+      ...visible.books.map((b) => ({ href: `/book/${b.id}`, key: `bk${b.id}` })),
+      ...visible.music.map((m) => ({ href: `/music/${m.id}`, key: `mu${m.id}` })),
+      ...visible.games.map((g) => ({ href: `/game/${g.id}`, key: `g${g.id}` })),
       ...visible.people.map((p) => ({ href: `/person/${p.id}`, key: `p${p.id}` })),
       ...visible.users.map((u) => ({ href: `/user/${u.username}`, key: `u${u.username}` })),
     ];
@@ -112,7 +117,7 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Search movies, TV shows, people and users…"
+          placeholder="Search movies, TV shows, anime, manga, games, people and users…"
           className="w-full bg-transparent text-[16px] text-bright outline-none placeholder:text-text-lighter"
           aria-label="Search"
         />
@@ -141,6 +146,61 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
               <>
                 <Thumb path={m.posterPath} />
                 <Label title={m.title} sub={[m.year, "TV"].filter(Boolean).join(" · ")} />
+              </>,
+            ),
+          )}
+          {visible.anime.length > 0 && <Group title="Anime" />}
+          {visible.anime.map((a) =>
+            row(
+              `a${a.id}`,
+              `/anime/${a.id}`,
+              <>
+                <Thumb path={a.posterPath} />
+                <Label title={a.title} sub={[a.year, "Anime"].filter(Boolean).join(" · ")} />
+              </>,
+            ),
+          )}
+          {visible.manga.length > 0 && <Group title="Manga" />}
+          {visible.manga.map((m) =>
+            row(
+              `mg${m.id}`,
+              `/manga/${m.id}`,
+              <>
+                <Thumb path={m.posterPath} />
+                <Label title={m.title} sub={[m.year, "Manga"].filter(Boolean).join(" · ")} />
+              </>,
+            ),
+          )}
+          {visible.books.length > 0 && <Group title="Books" />}
+          {visible.books.map((b) =>
+            row(
+              `bk${b.id}`,
+              `/book/${b.id}`,
+              <>
+                <Thumb path={b.posterPath} />
+                <Label title={b.title} sub={[b.year, "Book"].filter(Boolean).join(" · ")} />
+              </>,
+            ),
+          )}
+          {visible.music.length > 0 && <Group title="Music" />}
+          {visible.music.map((m) =>
+            row(
+              `mu${m.id}`,
+              `/music/${m.id}`,
+              <>
+                <Thumb path={m.posterPath} />
+                <Label title={m.title} sub={[m.year, "Album"].filter(Boolean).join(" · ")} />
+              </>,
+            ),
+          )}
+          {visible.games.length > 0 && <Group title="Games" />}
+          {visible.games.map((g) =>
+            row(
+              `g${g.id}`,
+              `/game/${g.id}`,
+              <>
+                <Thumb path={g.posterPath} />
+                <Label title={g.title} sub={[g.year, "Game"].filter(Boolean).join(" · ")} />
               </>,
             ),
           )}
@@ -174,6 +234,12 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
               </Link>
               <Link onClick={close} className="font-semibold text-accent" href={`/search/tv?search=${encodeURIComponent(query.trim())}`}>
                 TV Shows
+              </Link>
+              <Link onClick={close} className="font-semibold text-accent" href={`/search/anime?search=${encodeURIComponent(query.trim())}`}>
+                Anime
+              </Link>
+              <Link onClick={close} className="font-semibold text-accent" href={`/search/game?search=${encodeURIComponent(query.trim())}`}>
+                Games
               </Link>
               <Link onClick={close} className="font-semibold text-accent" href={`/search/people?search=${encodeURIComponent(query.trim())}`}>
                 People

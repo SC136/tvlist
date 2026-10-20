@@ -1,17 +1,47 @@
 /* Client-safe media helpers and normalized types shared by server and client code. */
 
-export type MediaType = "movie" | "tv";
+export type MediaType = "movie" | "tv" | "anime" | "game" | "manga" | "book" | "music";
+export type MediaCategory = "movie" | "tv" | "anime" | "game" | "manga" | "book" | "music";
 
-export const MEDIA_TYPES: MediaType[] = ["movie", "tv"];
+export const MEDIA_TYPES: MediaType[] = ["movie", "tv", "anime", "game", "manga", "book", "music"];
+export const MEDIA_CATEGORIES: MediaCategory[] = ["movie", "tv", "anime", "game", "manga", "book", "music"];
 
 export function isMediaType(value: unknown): value is MediaType {
-  return value === "movie" || value === "tv";
+  return value === "movie" || value === "tv" || value === "anime" || value === "game" || value === "manga" || value === "book" || value === "music";
+}
+
+export function isMediaCategory(value: unknown): value is MediaCategory {
+  return value === "movie" || value === "tv" || value === "anime" || value === "game" || value === "manga" || value === "book" || value === "music";
 }
 
 export const MEDIA_LABEL: Record<MediaType, { one: string; many: string; list: string }> = {
   movie: { one: "Movie", many: "Movies", list: "Movie List" },
   tv: { one: "TV Show", many: "TV Shows", list: "TV List" },
+  anime: { one: "Anime", many: "Anime", list: "Anime List" },
+  game: { one: "Game", many: "Games", list: "Game List" },
+  manga: { one: "Manga", many: "Manga", list: "Manga List" },
+  book: { one: "Book", many: "Books", list: "Book List" },
+  music: { one: "Album", many: "Music", list: "Music List" },
 };
+
+export const CATEGORY_LABEL = MEDIA_LABEL;
+
+export function isAnimeMedia(media: {
+  type?: string | null;
+  genres?: string[] | null;
+  country?: string | null;
+  originalLanguage?: string | null;
+}): boolean {
+  if (media.type === "anime") return true;
+  const genres = media.genres ?? [];
+  const isAnimated = genres.some((g) => g.toLowerCase() === "animation");
+  const lang = media.originalLanguage?.toLowerCase();
+  const country = media.country?.toUpperCase();
+  const isAsianAnim =
+    lang === "ja" || lang === "zh" || lang === "ko" ||
+    country === "JP" || country === "CN" || country === "KR";
+  return Boolean(isAnimated && isAsianAnim);
+}
 
 /** A title as it appears in grids, search results and recommendations. */
 export interface MediaSummary {
@@ -30,6 +60,98 @@ export interface MediaSummary {
   voteCount: number;
   popularity: number;
   originalLanguage: string | null;
+}
+
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profilePath: string | null;
+  episodes: number | null;
+}
+
+export interface CrewMember {
+  id: number;
+  name: string;
+  jobs: string[];
+  department: string;
+  profilePath: string | null;
+  episodes: number | null;
+}
+
+export interface Provider {
+  id: number;
+  name: string;
+  logoPath: string | null;
+}
+
+export interface SeasonSummary {
+  number: number;
+  name: string;
+  episodes: number;
+  airDate: string | null;
+  posterPath: string | null;
+  overview: string;
+}
+
+export interface EpisodeRef {
+  season: number;
+  episode: number;
+  name: string;
+  airDate: string | null;
+}
+
+export interface MediaDetails extends MediaSummary {
+  tagline: string | null;
+  format: string;
+  status: string;
+  rawStatus: string | null;
+  endDate: string | null;
+  runtime: number | null;
+  episodes: number | null;
+  chapters?: number | null;
+  volumes?: number | null;
+  pages?: number | null;
+  tracks?: { number: number; name: string; duration: number; previewUrl?: string | null }[];
+  seasons: number | null;
+  seasonList: SeasonSummary[];
+  studios: string[];
+  networks: Provider[];
+  countries: string[];
+  languages: string[];
+  certification: string | null;
+  budget: number | null;
+  revenue: number | null;
+  homepage: string | null;
+  nextEpisode: EpisodeRef | null;
+  lastEpisode: EpisodeRef | null;
+  creators: { id: number; name: string; profilePath: string | null }[];
+  cast: CastMember[];
+  crew: CrewMember[];
+  videos: { key: string; name: string; type: string }[];
+  trailer: { key: string; name: string } | null;
+  recommendations: MediaSummary[];
+  similar: MediaSummary[];
+  collection: { id: number; name: string; posterPath: string | null } | null;
+  keywords: string[];
+  platforms?: string[];
+  screenshots?: string[];
+  developers?: string[];
+  publishers?: string[];
+  externalIds: {
+    imdb: string | null;
+    tvdb: number | null;
+    wikidata: string | null;
+    instagram: string | null;
+    twitter: string | null;
+    facebook: string | null;
+    rawg?: string | null;
+    metacritic?: string | null;
+    reddit?: string | null;
+    openlibrary?: string | null;
+    appleMusic?: string | null;
+  };
+  watch: { region: string; link: string | null; stream: Provider[]; rent: Provider[]; buy: Provider[]; free: Provider[] } | null;
 }
 
 export interface Paged<T> {
@@ -51,8 +173,12 @@ export function tmdbImage(
   size: PosterSize | BackdropSize | ProfileSize | LogoSize | "w300" = "w342",
 ): string | null {
   if (!path) return null;
+  // Proxy RAWG game images through Next.js rewrite
+  const rawgPrefix = "https://media.rawg.io/media/";
+  if (path.startsWith(rawgPrefix)) return `/img/rawg/${path.slice(rawgPrefix.length)}`;
   if (path.startsWith("http")) return path;
-  return `https://image.tmdb.org/t/p/${size}${path}`;
+  // ponytail: proxy through Next.js rewrite to bypass ISP DNS blocks on image.tmdb.org
+  return `/img/tmdb/${size}${path}`;
 }
 
 /* ------------------------------- Genres ---------------------------------- */

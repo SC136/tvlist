@@ -9,7 +9,7 @@ import { UserScore } from "@/components/ui/user-score";
 import { ListEditor } from "./list-editor";
 import { cn } from "@/lib/cn";
 import { airingIn, formatDate, STATUS_COLORS, statusLabel, type ListStatus, type ScoreFormat } from "@/lib/format";
-import { countryName, type MediaType } from "@/lib/media";
+import { countryName, type MediaCategory } from "@/lib/media";
 import type { ListRow } from "@/lib/queries/user-stats";
 
 const SECTION_ORDER: ListStatus[] = ["CURRENT", "REPEATING", "COMPLETED", "PAUSED", "DROPPED", "PLANNING"];
@@ -36,7 +36,7 @@ export function UserListView({
   ownerName,
 }: {
   initialRows: ListRow[];
-  type: MediaType;
+  type: MediaCategory;
   isOwner: boolean;
   scoreFormat: ScoreFormat;
   ownerName: string;
@@ -113,12 +113,14 @@ export function UserListView({
   }
 
   if (rows.length === 0) {
+    const typeLabel = type === "movie" ? "movie" : type === "anime" ? "anime" : "TV";
+    const browseLabel = type === "movie" ? "Movies" : type === "anime" ? "Anime" : "TV Shows";
     return (
       <div className="card px-6 py-14 text-center">
-        <p className="text-[15px] font-semibold text-bright">{isOwner ? `Your ${type === "movie" ? "movie" : "TV"} list is empty.` : `${ownerName} hasn't added anything yet.`}</p>
+        <p className="text-[15px] font-semibold text-bright">{isOwner ? `Your ${typeLabel} list is empty.` : `${ownerName} hasn't added anything yet.`}</p>
         {isOwner && (
           <Link href={`/search/${type}`} className="btn btn-primary mt-4">
-            Browse {type === "movie" ? "Movies" : "TV Shows"}
+            Browse {browseLabel}
           </Link>
         )}
       </div>
@@ -247,21 +249,22 @@ export function UserListView({
 
 function Row({
   row,
-  type,
+  type: _type,
   isOwner,
   scoreFormat,
   onEdit,
   onPlusOne,
 }: {
   row: ListRow;
-  type: MediaType;
+  type: MediaCategory;
   isOwner: boolean;
   scoreFormat: ScoreFormat;
   onEdit: () => void;
   onPlusOne: () => void;
 }) {
-  const total = type === "movie" ? 1 : row.media.episodes;
-  const airing = type === "tv" && row.media.nextEpisodeAirDate ? airingIn(row.media.nextEpisodeAirDate) : null;
+  const isTv = row.media.type === "tv";
+  const total = isTv ? row.media.episodes : 1;
+  const airing = isTv && row.media.nextEpisodeAirDate ? airingIn(row.media.nextEpisodeAirDate) : null;
   return (
     <div className="group relative grid grid-cols-[1fr_70px] items-center gap-4 border-b border-fg-grey-dark/60 px-4 py-2 last:border-0 hover:bg-fg-grey sm:grid-cols-[1fr_70px_90px_110px]">
       <span className="absolute top-0 bottom-0 left-0 w-1" style={{ background: STATUS_COLORS[row.status] }} />
@@ -303,7 +306,7 @@ function Row({
         <UserScore score={row.score} format={scoreFormat} />
       </div>
       <div className="hidden items-center justify-center gap-1 text-[13px] sm:flex">
-        {type === "tv" ? (
+        {isTv ? (
           <>
             <span>
               {row.progress}
@@ -324,13 +327,14 @@ function Row({
           <span className="text-text-lighter">{row.completedAt ? formatDate(row.completedAt) : row.progress ? "✓" : "–"}</span>
         )}
       </div>
-      <div className="hidden text-center text-[12px] text-text-light sm:block">{row.media.format ?? (type === "movie" ? "Movie" : "TV")}</div>
+      <div className="hidden text-center text-[12px] text-text-light sm:block">{row.media.format ?? (isTv ? "TV" : "Movie")}</div>
     </div>
   );
 }
 
-function GridCard({ row, type, isOwner, scoreFormat, onEdit }: { row: ListRow; type: MediaType; isOwner: boolean; scoreFormat: ScoreFormat; onEdit: () => void }) {
-  const total = type === "movie" ? 1 : row.media.episodes;
+function GridCard({ row, type: _type, isOwner, scoreFormat, onEdit }: { row: ListRow; type: MediaCategory; isOwner: boolean; scoreFormat: ScoreFormat; onEdit: () => void }) {
+  const isTv = row.media.type === "tv";
+  const total = isTv ? row.media.episodes : 1;
   return (
     <div className="group relative">
       <Link href={`/${row.media.type}/${row.media.tmdbId}`} className="relative block overflow-hidden rounded shadow-[var(--shadow-card)]">
@@ -338,7 +342,7 @@ function GridCard({ row, type, isOwner, scoreFormat, onEdit }: { row: ListRow; t
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2 pt-8">
           <p className="line-clamp-2 text-[12px] font-semibold text-white">{row.media.title}</p>
           <div className="mt-1 flex items-center justify-between text-[11px] font-semibold text-white/80">
-            <span>{type === "tv" ? `${row.progress}${total ? `/${total}` : ""}` : row.media.year}</span>
+            <span>{isTv ? `${row.progress}${total ? `/${total}` : ""}` : row.media.year}</span>
             <UserScore score={row.score} format={scoreFormat} className="text-white" />
           </div>
         </div>

@@ -2,6 +2,7 @@ import "server-only";
 import { and, desc, eq, gt } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { ListStatus } from "@/lib/format";
+import type { MediaType } from "@/lib/media";
 
 type EntryState = { status: ListStatus; progress: number; private?: boolean } | null;
 
@@ -12,7 +13,7 @@ type EntryState = { status: ListStatus; progress: number; private?: boolean } | 
  */
 export async function recordListActivity(
   userId: string,
-  media: { id: number; type: "movie" | "tv" },
+  media: { id: number; type: MediaType },
   prev: EntryState,
   next: EntryState,
 ) {
@@ -22,43 +23,68 @@ export async function recordListActivity(
 
   let status: string | null = null;
   let progress: string | null = null;
+  const isManga = media.type === "manga";
+  const isBook = media.type === "book";
+  const isMusic = media.type === "music";
+  const isGame = media.type === "game";
+  const hasUnits = media.type === "tv" || media.type === "anime" || media.type === "manga" || media.type === "book";
+  const unit = isBook ? "page" : isManga ? "chapter" : "episode";
 
   switch (next.status) {
     case "PLANNING":
-      if (statusChanged) status = "plans to watch";
+      if (statusChanged) status = isGame ? "plans to play" : isBook || isManga ? "plans to read" : isMusic ? "plans to listen" : "plans to watch";
       break;
     case "COMPLETED":
-      if (statusChanged) status = "completed";
+      if (statusChanged) status = isMusic ? "listened to" : "completed";
       break;
     case "DROPPED":
       if (statusChanged) {
         status = "dropped";
-        if (media.type === "tv" && next.progress > 0) progress = `episode ${next.progress}`;
+        if (hasUnits && next.progress > 0) progress = `${unit} ${next.progress}`;
       }
       break;
     case "PAUSED":
       if (statusChanged) {
-        status = "paused watching";
-        if (media.type === "tv" && next.progress > 0) progress = `episode ${next.progress}`;
+        status = isGame ? "paused playing" : isBook || isManga ? "paused reading" : isMusic ? "paused listening" : "paused watching";
+        if (hasUnits && next.progress > 0) progress = `${unit} ${next.progress}`;
       }
       break;
     case "CURRENT":
     case "REPEATING": {
-      const verb = next.status === "REPEATING" ? "rewatched episode" : "watched episode";
-      if (media.type === "tv" && progressUp) {
+      const verb = isBook
+        ? next.status === "REPEATING" ? "reread page" : "read page"
+        : isManga
+          ? next.status === "REPEATING" ? "reread chapter" : "read chapter"
+          : isMusic
+            ? next.status === "REPEATING" ? "relistened to" : "listened to"
+            : next.status === "REPEATING" ? "rewatched episode" : "watched episode";
+      if (hasUnits && progressUp) {
         status = verb;
         const from = statusChanged && next.status === "REPEATING" ? 1 : (prev?.progress ?? 0) + 1;
         progress = from >= next.progress ? String(next.progress) : `${from} - ${next.progress}`;
       } else if (statusChanged) {
-        status = next.status === "REPEATING" ? "is rewatching" : media.type === "movie" ? "is watching" : "started watching";
+        status = isGame
+          ? next.status === "REPEATING" ? "is replaying" : "is playing"
+          : isBook || isManga
+            ? next.status === "REPEATING" ? "is rereading" : "started reading"
+            : isMusic
+              ? next.status === "REPEATING" ? "is relistening" : "started listening"
+              : next.status === "REPEATING" ? "is rewatching" : media.type === "movie" ? "is watching" : "started watching";
       }
       break;
     }
   }
   if (!status) return;
 
-  // Merge with a recent "watched episode" activity for the same title.
-  if (status === "watched episode" || status === "rewatched episode") {
+  // Merge with a recent episode/chapter/page activity for the same title.
+  if (
+    status === "watched episode" ||
+    status === "rewatched episode" ||
+    status === "read chapter" ||
+    status === "reread chapter" ||
+    status === "read page" ||
+    status === "reread page"
+  ) {
     const recent = await db.query.activity.findFirst({
       where: and(
         eq(schema.activity.userId, userId),

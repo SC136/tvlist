@@ -3,7 +3,7 @@ import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { MediaPerson } from "@/db/schema";
 import type { ListStatus } from "@/lib/format";
-import type { MediaType } from "@/lib/media";
+import { isAnimeMedia, type MediaCategory, type MediaType } from "@/lib/media";
 
 export interface ListRow {
   entryId: number;
@@ -40,21 +40,32 @@ export interface ListRow {
   };
 }
 
-/** A user's full list for one media type (private rows only for the owner). */
-export async function getUserList(userId: string, type: MediaType, includePrivate: boolean): Promise<ListRow[]> {
-  const rows = await db
+/** A user's full list for one media category (private rows only for the owner). */
+export async function getUserList(userId: string, category: MediaCategory, includePrivate: boolean): Promise<ListRow[]> {
+  const allRows = await db
     .select({ entry: schema.listEntry, media: schema.media })
     .from(schema.listEntry)
     .innerJoin(schema.media, eq(schema.media.id, schema.listEntry.mediaId))
     .where(
       and(
         eq(schema.listEntry.userId, userId),
-        eq(schema.media.type, type),
+        category === "anime" ? undefined : eq(schema.media.type, category),
         includePrivate ? undefined : eq(schema.listEntry.private, false),
       ),
     )
     .orderBy(desc(schema.listEntry.updatedAt));
-  return rows.map(({ entry: e, media: m }) => ({
+
+  const filtered = allRows.filter(({ media: m }) => {
+    if (category === "anime") {
+      return m.type === "anime" || isAnimeMedia(m);
+    }
+    if (category === "movie" || category === "tv") {
+      return m.type === category && !isAnimeMedia(m);
+    }
+    return m.type === category;
+  });
+
+  return filtered.map(({ entry: e, media: m }) => ({
     entryId: e.id,
     status: e.status,
     score: e.score,
@@ -91,7 +102,19 @@ export async function getUserList(userId: string, type: MediaType, includePrivat
 }
 
 function minutesFor(r: ListRow): number {
-  const runtime = r.media.runtime ?? (r.media.type === "movie" ? 110 : 45);
+  if (r.media.type === "manga") {
+    return 7 * (r.progress + r.repeat * (r.media.episodes ?? 0));
+  }
+  if (r.media.type === "book") {
+    return Math.round(1.5 * (r.progress + r.repeat * (r.media.episodes ?? 300)));
+  }
+  if (r.media.type === "music") {
+    const runtime = r.media.runtime ?? 45;
+    const listened = r.progress > 0 || r.status === "COMPLETED" ? 1 : 0;
+    return runtime * (listened + r.repeat);
+  }
+  const isAnime = isAnimeMedia(r.media);
+  const runtime = r.media.runtime ?? (r.media.type === "movie" ? (isAnime ? 100 : 110) : (isAnime ? 24 : 45));
   if (r.media.type === "movie") {
     const watched = r.progress > 0 || r.status === "COMPLETED" ? 1 : 0;
     return runtime * (watched + r.repeat);
@@ -101,6 +124,10 @@ function minutesFor(r: ListRow): number {
 
 function episodesFor(r: ListRow): number {
   if (r.media.type === "movie") return 0;
+  if (r.media.type === "music") {
+    const listened = r.progress > 0 || r.status === "COMPLETED" ? 1 : 0;
+    return (r.media.episodes ?? 10) * (listened + r.repeat);
+  }
   return r.progress + r.repeat * (r.media.episodes ?? 0);
 }
 
@@ -125,7 +152,7 @@ function finish(map: Map<string, Bucket>) {
 
 export type UserStats = ReturnType<typeof computeStats>;
 
-export function computeStats(rows: ListRow[], type: MediaType) {
+export function computeStats(rows: ListRow[], type: MediaCategory) {
   const counted = rows.filter((r) => r.status !== "PLANNING");
   const scored = counted.filter((r) => r.score > 0);
   const mean = scored.length ? scored.reduce((a, r) => a + r.score, 0) / scored.length : 0;
@@ -135,7 +162,7 @@ export function computeStats(rows: ListRow[], type: MediaType) {
   const minutes = counted.reduce((a, r) => a + minutesFor(r), 0);
   const planningMinutes = rows
     .filter((r) => r.status === "PLANNING")
-    .reduce((a, r) => a + (r.media.runtime ?? (type === "movie" ? 110 : 45)) * (type === "movie" ? 1 : r.media.episodes ?? 0), 0);
+    .reduce((a, r) => a + (r.media.runtime ?? (r.media.type === "movie" ? 110 : 24)) * (r.media.type === "movie" ? 1 : r.media.episodes ?? 0), 0);
 
   const status = new Map<string, Bucket>();
   const scores = new Map<string, Bucket>();
@@ -215,8 +242,8 @@ export function computeStats(rows: ListRow[], type: MediaType) {
 
 const LENGTH_ORDER = ["< 90 min", "90–120 min", "120–150 min", "150+ min", "1", "2–6", "7–16", "17–28", "29–55", "56–100", "101+", "Unknown"];
 
-function lengthBucket(r: ListRow, type: MediaType): string {
-  if (type === "movie") {
+function lengthBucket(r: ListRow, _type: MediaCategory): string {
+  if (r.media.type === "movie") {
     const m = r.media.runtime;
     if (!m) return "Unknown";
     if (m < 90) return "< 90 min";

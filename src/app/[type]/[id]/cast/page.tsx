@@ -6,20 +6,24 @@ import { getMediaPage } from "@/lib/queries/media-page";
 
 export async function generateMetadata({ params }: PageProps<"/[type]/[id]/cast">): Promise<Metadata> {
   const { type, id } = await params;
+  if (type === "game" || type === "book" || type === "music") return {};
   const data = await getMediaPage(type, id);
-  return data ? { title: `${data.details.title} · Cast` } : {};
+  const label = type === "manga" ? "Characters" : "Cast";
+  return data ? { title: `${data.details.title} · ${label}` } : {};
 }
 
 export default async function CastPage({ params }: PageProps<"/[type]/[id]/cast">) {
   const { type, id } = await params;
+  if (type === "game" || type === "book" || type === "music") notFound();
   const data = await getMediaPage(type, id);
   if (!data) notFound();
   const cast = data.details.cast;
+  const label = type === "manga" ? "Characters" : "Cast";
   return (
     <section>
-      <SectionHeader title={`Cast (${cast.length})`} />
+      <SectionHeader title={`${label} (${cast.length})`} />
       {cast.length === 0 ? (
-        <Empty>No cast information yet.</Empty>
+        <Empty>No {label.toLowerCase()} information yet.</Empty>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {cast.map((c) => (

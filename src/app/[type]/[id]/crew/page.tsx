@@ -9,12 +9,15 @@ const DEPARTMENT_ORDER = ["Directing", "Writing", "Production", "Sound", "Camera
 
 export async function generateMetadata({ params }: PageProps<"/[type]/[id]/crew">): Promise<Metadata> {
   const { type, id } = await params;
+  if (type === "game" || type === "book" || type === "music") return {};
   const data = await getMediaPage(type, id);
-  return data ? { title: `${data.details.title} · Crew` } : {};
+  const label = type === "manga" ? "Staff" : "Crew";
+  return data ? { title: `${data.details.title} · ${label}` } : {};
 }
 
 export default async function CrewPage({ params }: PageProps<"/[type]/[id]/crew">) {
   const { type, id } = await params;
+  if (type === "game" || type === "book" || type === "music") notFound();
   const data = await getMediaPage(type, id);
   if (!data) notFound();
   const groups = new Map<string, CrewMember[]>();
@@ -26,7 +29,8 @@ export default async function CrewPage({ params }: PageProps<"/[type]/[id]/crew"
   const departments = [...groups.keys()].sort(
     (a, b) => (DEPARTMENT_ORDER.indexOf(a) + 1 || 99) - (DEPARTMENT_ORDER.indexOf(b) + 1 || 99),
   );
-  if (!departments.length) return <Empty>No crew information yet.</Empty>;
+  const label = type === "manga" ? "staff" : "crew";
+  if (!departments.length) return <Empty>No {label} information yet.</Empty>;
   return (
     <div className="space-y-10">
       {departments.map((dep) => (

@@ -63,6 +63,10 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
                 image: viewer.image ?? "",
                 bannerImage: viewer.bannerImage ?? "",
                 profileColor: viewer.profileColor,
+                website: viewer.website ?? "",
+                location: viewer.location ?? "",
+                statusQuote: viewer.statusQuote ?? "",
+                defaultTab: viewer.defaultTab ?? "overview",
               }}
             />
           )}

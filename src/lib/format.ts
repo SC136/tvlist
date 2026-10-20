@@ -1,6 +1,6 @@
 /* Client-safe display helpers. */
 
-import type { MediaType } from "@/lib/media";
+import type { MediaCategory } from "@/lib/media";
 
 export type ScoreFormat = "POINT_100" | "POINT_10_DECIMAL" | "POINT_10" | "POINT_5" | "POINT_3";
 export type ListStatus = "CURRENT" | "PLANNING" | "COMPLETED" | "DROPPED" | "PAUSED" | "REPEATING";
@@ -15,38 +15,74 @@ export const SCORE_FORMATS: { value: ScoreFormat; label: string }[] = [
 
 export const LIST_STATUSES: ListStatus[] = ["CURRENT", "PLANNING", "COMPLETED", "REPEATING", "PAUSED", "DROPPED"];
 
-export function statusLabel(status: ListStatus, type: MediaType): string {
+export function statusLabel(status: ListStatus, type: MediaCategory): string {
   switch (status) {
     case "CURRENT":
-      return "Watching";
+      return type === "game"
+        ? "Playing"
+        : type === "manga" || type === "book"
+          ? "Reading"
+          : type === "music"
+            ? "Listening"
+            : "Watching";
     case "PLANNING":
-      return "Planning";
+      return type === "game"
+        ? "Backlog"
+        : type === "book"
+          ? "Want to Read"
+          : type === "music"
+            ? "Want to Listen"
+            : "Planning";
     case "COMPLETED":
-      return "Completed";
+      return type === "music" ? "Listened" : "Completed";
     case "DROPPED":
       return "Dropped";
     case "PAUSED":
       return "Paused";
     case "REPEATING":
-      return type === "movie" ? "Rewatching" : "Rewatching";
+      return type === "game"
+        ? "Replaying"
+        : type === "manga" || type === "book"
+          ? "Rereading"
+          : type === "music"
+            ? "Relistening"
+            : "Rewatching";
   }
 }
 
 /** "Set as Watching" etc. on the add-to-list button. */
-export function statusAction(status: ListStatus): string {
+export function statusAction(status: ListStatus, type?: MediaCategory): string {
   switch (status) {
     case "CURRENT":
-      return "Watching";
+      return type === "game"
+        ? "Playing"
+        : type === "manga" || type === "book"
+          ? "Reading"
+          : type === "music"
+            ? "Listening"
+            : "Watching";
     case "PLANNING":
-      return "Planning";
+      return type === "game"
+        ? "Backlog"
+        : type === "book"
+          ? "Want to Read"
+          : type === "music"
+            ? "Want to Listen"
+            : "Planning";
     case "COMPLETED":
-      return "Completed";
+      return type === "music" ? "Listened" : "Completed";
     case "DROPPED":
       return "Dropped";
     case "PAUSED":
       return "Paused";
     case "REPEATING":
-      return "Rewatching";
+      return type === "game"
+        ? "Replaying"
+        : type === "manga" || type === "book"
+          ? "Rereading"
+          : type === "music"
+            ? "Relistening"
+            : "Rewatching";
   }
 }
 

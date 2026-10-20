@@ -12,11 +12,11 @@ export default function TermsPage() {
           This is a starting template. Have it reviewed and adapted for your jurisdiction before running a public service.
         </p>
 
-        <h2 className="pt-2 text-[16px] font-bold text-bright">Using tvlist</h2>
+        <h2 className="pt-2 text-[16px] font-bold text-bright">Using Omnilist</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>Be respectful. No harassment, hate speech, spam, or illegal content.</li>
           <li>Mark spoilers in reviews, posts and comments.</li>
-          <li>You own what you write; you give tvlist permission to display it on the site.</li>
+          <li>You own what you write; you give Omnilist permission to display it on the site.</li>
           <li>Moderators may remove content or accounts that break these rules.</li>
         </ul>
 
@@ -39,8 +39,7 @@ export default function TermsPage() {
 
         <h2 className="pt-2 text-[16px] font-bold text-bright">Third parties</h2>
         <p>
-          Title data and images are loaded from TMDB. Trailers load from YouTube only when you press play. We don&apos;t sell your data or
-          use advertising trackers.
+          Media catalog data, artwork, and covers are loaded from TMDB, AniList, RAWG, Open Library, and Apple Music. Video trailers load from YouTube on-demand only when you click play. We don&apos;t sell your personal data or use third-party advertising trackers.
         </p>
       </article>
     </Page>

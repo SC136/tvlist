@@ -1,9 +1,15 @@
 import "server-only";
 import {
   genreMap,
+  isAnimeMedia,
+  type CrewMember,
+  type EpisodeRef,
+  type MediaCategory,
+  type MediaDetails,
   type MediaSummary,
   type MediaType,
   type Paged,
+  type Provider,
   yearOf,
 } from "@/lib/media";
 import { mockTmdb } from "./mock";
@@ -25,7 +31,8 @@ import type {
   TmdbWatchProvider,
 } from "./types";
 
-const API = "https://api.themoviedb.org/3";
+const API_PRIMARY = process.env.TMDB_API_BASE_URL || "https://api.tmdb.org/3";
+const API_FALLBACK = "https://api.themoviedb.org/3";
 
 /** True when no TMDB credentials are configured and the built-in demo catalog is served. */
 export function isDemoMode(): boolean {
@@ -35,6 +42,23 @@ export function isDemoMode(): boolean {
 type Params = Record<string, string | number | boolean | undefined | null>;
 
 class TmdbNotFound extends Error {}
+
+async function fetchTmdbEndpoint<T>(
+  baseUrl: string,
+  path: string,
+  search: URLSearchParams,
+  headers: HeadersInit,
+  revalidate: number,
+): Promise<T> {
+  const res = await fetch(`${baseUrl}${path}?${search}`, {
+    headers,
+    signal: AbortSignal.timeout(8000),
+    next: { revalidate },
+  });
+  if (res.status === 404) throw new TmdbNotFound(path);
+  if (!res.ok) throw new Error(`TMDB ${res.status} for ${path}`);
+  return (await res.json()) as T;
+}
 
 /**
  * Low-level TMDB request. Accepts either a v4 "API Read Access Token" (JWT,
@@ -58,10 +82,22 @@ async function tmdb<T>(path: string, params: Params = {}, revalidate = 3600): Pr
   if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`;
   else search.set("api_key", key);
 
-  const res = await fetch(`${API}${path}?${search}`, { headers, next: { revalidate } });
-  if (res.status === 404) throw new TmdbNotFound(path);
-  if (!res.ok) throw new Error(`TMDB ${res.status} for ${path}`);
-  return (await res.json()) as T;
+  try {
+    return await fetchTmdbEndpoint<T>(API_PRIMARY, path, search, headers, revalidate);
+  } catch (err) {
+    if (err instanceof TmdbNotFound) throw err;
+    if (API_PRIMARY !== API_FALLBACK) {
+      try {
+        return await fetchTmdbEndpoint<T>(API_FALLBACK, path, search, headers, revalidate);
+      } catch (fallbackErr) {
+        if (fallbackErr instanceof TmdbNotFound) throw fallbackErr;
+      }
+    }
+    console.warn(`[tmdb] Network error fetching ${path}, attempting demo fallback:`, err instanceof Error ? err.message : err);
+    const fallback = mockTmdb(path, search);
+    if (fallback !== null) return fallback as T;
+    throw err;
+  }
 }
 
 async function orNull<T>(promise: Promise<T>): Promise<T | null> {
@@ -69,7 +105,8 @@ async function orNull<T>(promise: Promise<T>): Promise<T | null> {
     return await promise;
   } catch (err) {
     if (err instanceof TmdbNotFound) return null;
-    throw err;
+    console.warn("[tmdb] orNull caught error:", err instanceof Error ? err.message : err);
+    return null;
   }
 }
 
@@ -126,16 +163,60 @@ function toPaged<T extends TmdbMovieListItem | TmdbTvListItem>(data: TmdbPaged<T
 /*                                   Lists                                   */
 /* ------------------------------------------------------------------------- */
 
-export async function getTrending(type: MediaType | "all", window: "day" | "week" = "week", page = 1) {
+export async function getTrending(type: MediaCategory | "all", window: "day" | "week" = "week", page = 1) {
+  if (type === "anime") {
+    return getAnimeCuratedList("trending", page);
+  }
   const data = await tmdb<TmdbPaged<TmdbMovieListItem | TmdbTvListItem>>(`/trending/${type}/${window}`, { page }, 3600);
-  return toPaged(data, type === "all" ? undefined : type);
+  const paged = toPaged(data, type === "all" ? undefined : type);
+  if (type === "tv" || type === "movie") {
+    paged.results = paged.results.filter((item) => !isAnimeMedia(item));
+  }
+  return paged;
 }
 
 export type CuratedList = "popular" | "top_rated" | "upcoming" | "now_playing" | "on_the_air" | "airing_today";
+export type AnimeCuratedList = "trending" | "popular" | "top_rated" | "airing" | "movies";
+
+export async function getAnimeCuratedList(list: AnimeCuratedList, page = 1): Promise<Paged<MediaSummary>> {
+  if (list === "movies") {
+    const data = await tmdb<TmdbPaged<TmdbMovieListItem>>(
+      `/discover/movie`,
+      {
+        page,
+        with_genres: 16,
+        with_original_language: "ja",
+        sort_by: "popularity.desc",
+      },
+      3600,
+    );
+    return toPaged(data, "movie");
+  }
+
+  const sort_by = list === "top_rated" ? "vote_average.desc" : "popularity.desc";
+  const params: Params = {
+    page,
+    with_genres: 16,
+    with_original_language: "ja",
+    sort_by,
+  };
+  if (list === "top_rated") {
+    params["vote_count.gte"] = 150;
+  } else if (list === "airing") {
+    params.with_status = 0;
+  }
+
+  const data = await tmdb<TmdbPaged<TmdbTvListItem>>(`/discover/tv`, params, 3600);
+  return toPaged(data, "tv");
+}
 
 export async function getCuratedList(type: MediaType, list: CuratedList, page = 1) {
   const data = await tmdb<TmdbPaged<TmdbMovieListItem | TmdbTvListItem>>(`/${type}/${list}`, { page, region: list === "upcoming" || list === "now_playing" ? "US" : undefined }, 3600);
-  return toPaged(data, type);
+  const paged = toPaged(data, type);
+  if (type === "tv" || type === "movie") {
+    paged.results = paged.results.filter((item) => !isAnimeMedia(item));
+  }
+  return paged;
 }
 
 export type BrowseSort = "popularity" | "score" | "newest" | "oldest" | "title" | "votes" | "revenue";
@@ -161,7 +242,61 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function discover(type: MediaType, filters: BrowseFilters, page = 1): Promise<Paged<MediaSummary>> {
+export async function discover(type: MediaCategory, filters: BrowseFilters, page = 1): Promise<Paged<MediaSummary>> {
+  if (type === "manga" || type === "game" || type === "book" || type === "music") {
+    return { page: 1, totalPages: 1, totalResults: 0, results: [] };
+  }
+  if (type === "anime") {
+    if (filters.query) {
+      const data = await tmdb<TmdbPaged<TmdbTvListItem>>(
+        `/search/tv`,
+        {
+          query: filters.query,
+          page,
+          include_adult: false,
+          first_air_date_year: filters.year,
+        },
+        600,
+      );
+      const paged = toPaged(data, "tv");
+      paged.results = paged.results.filter(
+        (r) => r.genres.includes("Animation") || r.originalLanguage === "ja",
+      );
+      return paged;
+    }
+
+    const sortField: Record<BrowseSort, string> = {
+      popularity: "popularity.desc",
+      score: "vote_average.desc",
+      newest: "first_air_date.desc",
+      oldest: "first_air_date.asc",
+      title: "name.asc",
+      votes: "vote_count.desc",
+      revenue: "popularity.desc",
+    };
+    const sort = filters.sort ?? "popularity";
+    const animeGenres = filters.genres?.length ? [16, ...filters.genres].join(",") : "16";
+    const params: Params = {
+      page,
+      include_adult: false,
+      sort_by: sortField[sort],
+      with_genres: animeGenres,
+      with_original_language: "ja",
+      "vote_average.gte": filters.minScore ? filters.minScore / 10 : undefined,
+      "vote_count.gte": sort === "score" ? 100 : sort === "oldest" ? 10 : undefined,
+    };
+    if (filters.provider) {
+      params.with_watch_providers = filters.provider;
+      params.watch_region = filters.region ?? "US";
+    }
+    params.first_air_date_year = filters.year;
+    params.with_status = filters.tvStatus;
+    if (sort === "newest") params["first_air_date.lte"] = today();
+
+    const data = await tmdb<TmdbPaged<TmdbTvListItem>>(`/discover/tv`, params, 3600);
+    return toPaged(data, "tv");
+  }
+
   if (filters.query) {
     const data = await tmdb<TmdbPaged<TmdbMovieListItem | TmdbTvListItem>>(
       `/search/${type}`,
@@ -178,6 +313,9 @@ export async function discover(type: MediaType, filters: BrowseFilters, page = 1
     if (filters.genres?.length) {
       const names = filters.genres.map((g) => genreMap(type)[g]);
       paged.results = paged.results.filter((r) => names.every((n) => r.genres.includes(n)));
+    }
+    if (type === "tv" || type === "movie") {
+      paged.results = paged.results.filter((item) => !isAnimeMedia(item));
     }
     return paged;
   }
@@ -217,7 +355,11 @@ export async function discover(type: MediaType, filters: BrowseFilters, page = 1
     if (sort === "newest") params["first_air_date.lte"] = today();
   }
   const data = await tmdb<TmdbPaged<TmdbMovieListItem | TmdbTvListItem>>(`/discover/${type}`, params, 3600);
-  return toPaged(data, type);
+  const paged = toPaged(data, type);
+  if (type === "tv" || type === "movie") {
+    paged.results = paged.results.filter((item) => !isAnimeMedia(item));
+  }
+  return paged;
 }
 
 export interface PersonSummary {
@@ -289,77 +431,14 @@ export async function getPopularPeople(page = 1): Promise<Paged<PersonSummary>> 
 /*                                  Details                                  */
 /* ------------------------------------------------------------------------- */
 
-export interface CastMember {
-  id: number;
-  name: string;
-  character: string;
-  profilePath: string | null;
-  episodes: number | null;
-}
-
-export interface CrewMember {
-  id: number;
-  name: string;
-  jobs: string[];
-  department: string;
-  profilePath: string | null;
-  episodes: number | null;
-}
-
-export interface Provider {
-  id: number;
-  name: string;
-  logoPath: string | null;
-}
-
-export interface SeasonSummary {
-  number: number;
-  name: string;
-  episodes: number;
-  airDate: string | null;
-  posterPath: string | null;
-  overview: string;
-}
-
-export interface EpisodeRef {
-  season: number;
-  episode: number;
-  name: string;
-  airDate: string | null;
-}
-
-export interface MediaDetails extends MediaSummary {
-  tagline: string | null;
-  format: string;
-  status: string;
-  rawStatus: string | null;
-  endDate: string | null;
-  runtime: number | null;
-  episodes: number | null;
-  seasons: number | null;
-  seasonList: SeasonSummary[];
-  studios: string[];
-  networks: Provider[];
-  countries: string[];
-  languages: string[];
-  certification: string | null;
-  budget: number | null;
-  revenue: number | null;
-  homepage: string | null;
-  nextEpisode: EpisodeRef | null;
-  lastEpisode: EpisodeRef | null;
-  creators: { id: number; name: string; profilePath: string | null }[];
-  cast: CastMember[];
-  crew: CrewMember[];
-  videos: { key: string; name: string; type: string }[];
-  trailer: { key: string; name: string } | null;
-  recommendations: MediaSummary[];
-  similar: MediaSummary[];
-  collection: { id: number; name: string; posterPath: string | null } | null;
-  keywords: string[];
-  externalIds: { imdb: string | null; tvdb: number | null; wikidata: string | null; instagram: string | null; twitter: string | null; facebook: string | null };
-  watch: { region: string; link: string | null; stream: Provider[]; rent: Provider[]; buy: Provider[]; free: Provider[] } | null;
-}
+export type {
+  CastMember,
+  CrewMember,
+  Provider,
+  SeasonSummary,
+  EpisodeRef,
+  MediaDetails,
+} from "@/lib/media";
 
 function movieFormat(d: TmdbMovieDetails): string {
   const genres = d.genres.map((g) => g.name);

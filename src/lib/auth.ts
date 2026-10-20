@@ -44,7 +44,7 @@ async function generateUsername(seed: string): Promise<string> {
 }
 
 export const auth = betterAuth({
-  appName: "tvlist",
+  appName: "Omnilist",
   baseURL: siteUrl(),
   trustedOrigins: trustedOrigins(),
   database: drizzleAdapter(db, { provider: "pg", schema }),
@@ -60,6 +60,10 @@ export const auth = betterAuth({
     additionalFields: {
       about: { type: "string", required: false, input: false },
       bannerImage: { type: "string", required: false, input: false },
+      website: { type: "string", required: false, input: false },
+      location: { type: "string", required: false, input: false },
+      statusQuote: { type: "string", required: false, input: false },
+      defaultTab: { type: "string", required: false, input: false, defaultValue: "overview" },
       profileColor: { type: "string", required: false, input: false, defaultValue: "auto" },
       scoreFormat: { type: "string", required: false, input: false, defaultValue: "POINT_10_DECIMAL" },
       role: { type: "string", required: false, input: false, defaultValue: "user" },

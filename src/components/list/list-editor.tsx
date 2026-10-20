@@ -56,7 +56,8 @@ export function ListEditor({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const set = <K extends keyof SavedEntry>(key: K, value: SavedEntry[K]) => setForm((f) => ({ ...f, [key]: value }));
-  const total = media.type === "movie" ? 1 : media.episodes;
+  const isCheckable = media.type === "movie" || media.type === "game" || media.type === "music";
+  const total = isCheckable ? 1 : media.episodes;
 
   function save() {
     setError(null);
@@ -132,8 +133,22 @@ export function ListEditor({
         <Field label="Score">
           <ScoreInput value={form.score} onChange={(v) => set("score", v)} format={scoreFormat} />
         </Field>
-        <Field label={media.type === "movie" ? "Watched" : "Episode Progress"}>
-          {media.type === "movie" ? (
+        <Field
+          label={
+            media.type === "movie"
+              ? "Watched"
+              : media.type === "game"
+                ? "Status"
+                : media.type === "music"
+                  ? "Listened"
+                  : media.type === "book"
+                    ? "Pages Read"
+                    : media.type === "manga"
+                      ? "Chapters Read"
+                      : "Episode Progress"
+          }
+        >
+          {isCheckable ? (
             <label className="flex h-[38px] items-center gap-2 text-[13px] font-semibold">
               <input
                 type="checkbox"
@@ -141,7 +156,7 @@ export function ListEditor({
                 onChange={(e) => set("progress", e.target.checked ? 1 : 0)}
                 className="h-4 w-4 accent-[rgb(var(--accent))]"
               />
-              Seen it
+              {media.type === "game" ? "Beat it / Finished" : media.type === "music" ? "Listened through" : "Seen it"}
             </label>
           ) : (
             <div className="flex items-center gap-2">
@@ -153,14 +168,20 @@ export function ListEditor({
                   value={form.progress}
                   onChange={(e) => set("progress", Math.max(0, Math.min(total ?? 100000, Number(e.target.value) || 0)))}
                   className="input-grey pr-12"
-                  aria-label="Episodes watched"
+                  aria-label={media.type === "book" ? "Pages read" : media.type === "manga" ? "Chapters read" : "Episodes watched"}
                 />
                 {total ? <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[12px] text-text-lighter">/ {total}</span> : null}
               </div>
-              <StepButton label="One fewer episode" onClick={() => set("progress", Math.max(0, form.progress - 1))}>
+              <StepButton
+                label={media.type === "book" ? "One fewer page" : media.type === "manga" ? "One fewer chapter" : "One fewer episode"}
+                onClick={() => set("progress", Math.max(0, form.progress - 1))}
+              >
                 <Minus className="h-4 w-4" />
               </StepButton>
-              <StepButton label="One more episode" onClick={() => set("progress", Math.min(total ?? 100000, form.progress + 1))}>
+              <StepButton
+                label={media.type === "book" ? "One more page" : media.type === "manga" ? "One more chapter" : "One more episode"}
+                onClick={() => set("progress", Math.min(total ?? 100000, form.progress + 1))}
+              >
                 <Plus className="h-4 w-4" />
               </StepButton>
             </div>
@@ -172,7 +193,17 @@ export function ListEditor({
         <Field label="Finish Date">
           <DateInput value={form.completedAt} onChange={(v) => set("completedAt", v)} />
         </Field>
-        <Field label="Total Rewatches">
+        <Field
+          label={
+            media.type === "game"
+              ? "Total Replays"
+              : media.type === "manga" || media.type === "book"
+                ? "Total Rereads"
+                : media.type === "music"
+                  ? "Total Listens"
+                  : "Total Rewatches"
+          }
+        >
           <input
             type="number"
             min={0}

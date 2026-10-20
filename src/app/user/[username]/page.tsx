@@ -12,6 +12,7 @@ import { getActivities } from "@/lib/queries/activity";
 import { computeStats, getActivityHistory, getUserList } from "@/lib/queries/user-stats";
 import { toFeedViewer } from "@/lib/session";
 import { formatDays, formatNumber } from "@/lib/format";
+import { isAnimeMedia } from "@/lib/media";
 import { cn } from "@/lib/cn";
 
 const FILTERS = [
@@ -31,9 +32,14 @@ export default async function UserOverview({ params, searchParams }: PageProps<"
   const { user, isSelf, viewer, name } = profile;
   const filter = FILTERS.find((f) => f.key === sp.activity)?.key ?? "all";
 
-  const [movies, shows, history, activities, favMedia, favPeople] = await Promise.all([
+  const [movies, shows, anime, manga, books, music, games, history, activities, favMedia, favPeople] = await Promise.all([
     getUserList(user.id, "movie", isSelf),
     getUserList(user.id, "tv", isSelf),
+    getUserList(user.id, "anime", isSelf),
+    getUserList(user.id, "manga", isSelf),
+    getUserList(user.id, "book", isSelf),
+    getUserList(user.id, "music", isSelf),
+    getUserList(user.id, "game", isSelf),
     getActivityHistory(user.id),
     getActivities({ kind: "user", userId: user.id, filter }, viewer?.id ?? null),
     db.query.favourite.findMany({
@@ -50,13 +56,33 @@ export default async function UserOverview({ params, searchParams }: PageProps<"
   ]);
   const movieStats = computeStats(movies, "movie");
   const tvStats = computeStats(shows, "tv");
+  const animeStats = computeStats(anime, "anime");
+  const mangaStats = computeStats(manga, "manga");
+  const bookStats = computeStats(books, "book");
+  const musicStats = computeStats(music, "music");
+  const gameStats = computeStats(games, "game");
   const allGenres = new Map<string, number>();
-  for (const g of [...movieStats.genres, ...tvStats.genres]) allGenres.set(g.key, (allGenres.get(g.key) ?? 0) + g.count);
+  for (const g of [
+    ...movieStats.genres,
+    ...tvStats.genres,
+    ...animeStats.genres,
+    ...mangaStats.genres,
+    ...bookStats.genres,
+    ...musicStats.genres,
+    ...gameStats.genres,
+  ]) {
+    allGenres.set(g.key, (allGenres.get(g.key) ?? 0) + g.count);
+  }
   const topGenres = [...allGenres.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
   const genreTotal = topGenres.reduce((a, [, n]) => a + n, 0);
 
-  const favMovies = favMedia.filter((f) => f.media.type === "movie");
-  const favShows = favMedia.filter((f) => f.media.type === "tv");
+  const favAnime = favMedia.filter((f) => f.media.type === "anime" || isAnimeMedia(f.media));
+  const favManga = favMedia.filter((f) => f.media.type === "manga");
+  const favBooks = favMedia.filter((f) => f.media.type === "book");
+  const favMusic = favMedia.filter((f) => f.media.type === "music");
+  const favGames = favMedia.filter((f) => f.media.type === "game");
+  const favMovies = favMedia.filter((f) => f.media.type === "movie" && !isAnimeMedia(f.media));
+  const favShows = favMedia.filter((f) => f.media.type === "tv" && !isAnimeMedia(f.media));
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] xl:gap-10">
@@ -71,6 +97,11 @@ export default async function UserOverview({ params, searchParams }: PageProps<"
           </Link>
         ) : null}
 
+        {favAnime.length > 0 && <FavGrid title="Favourite Anime" items={favAnime.map((f) => f.media)} href={`/user/${user.username}/favorites`} />}
+        {favManga.length > 0 && <FavGrid title="Favourite Manga" items={favManga.map((f) => f.media)} href={`/user/${user.username}/favorites`} />}
+        {favBooks.length > 0 && <FavGrid title="Favourite Books" items={favBooks.map((f) => f.media)} href={`/user/${user.username}/favorites`} />}
+        {favMusic.length > 0 && <FavGrid title="Favourite Music" items={favMusic.map((f) => f.media)} href={`/user/${user.username}/favorites`} />}
+        {favGames.length > 0 && <FavGrid title="Favourite Games" items={favGames.map((f) => f.media)} href={`/user/${user.username}/favorites`} />}
         {favMovies.length > 0 && <FavGrid title="Favourite Movies" items={favMovies.map((f) => f.media)} href={`/user/${user.username}/favorites`} />}
         {favShows.length > 0 && <FavGrid title="Favourite TV" items={favShows.map((f) => f.media)} href={`/user/${user.username}/favorites`} />}
         {favPeople.length > 0 && (
@@ -94,14 +125,14 @@ export default async function UserOverview({ params, searchParams }: PageProps<"
       </div>
 
       <div className="min-w-0 space-y-8">
-        <section className="grid gap-4 sm:grid-cols-2">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <StatBox
             title="Movies"
             href={`/user/${user.username}/stats?type=movie`}
             items={[
-              { label: "Total Movies", value: formatNumber(movieStats.total) },
-              { label: "Days Watched", value: formatDays(movieStats.minutes) },
-              { label: "Mean Score", value: movieStats.meanScore ? String(movieStats.meanScore) : "–" },
+              { label: "Movies", value: formatNumber(movieStats.total) },
+              { label: "Days", value: formatDays(movieStats.minutes) },
+              { label: "Mean", value: movieStats.meanScore ? String(movieStats.meanScore) : "–" },
             ]}
           />
           <StatBox
@@ -109,8 +140,53 @@ export default async function UserOverview({ params, searchParams }: PageProps<"
             href={`/user/${user.username}/stats?type=tv`}
             items={[
               { label: "Episodes", value: formatNumber(tvStats.episodes) },
-              { label: "Days Watched", value: formatDays(tvStats.minutes) },
-              { label: "Mean Score", value: tvStats.meanScore ? String(tvStats.meanScore) : "–" },
+              { label: "Days", value: formatDays(tvStats.minutes) },
+              { label: "Mean", value: tvStats.meanScore ? String(tvStats.meanScore) : "–" },
+            ]}
+          />
+          <StatBox
+            title="Anime"
+            href={`/user/${user.username}/stats?type=anime`}
+            items={[
+              { label: "Episodes", value: formatNumber(animeStats.episodes) },
+              { label: "Days", value: formatDays(animeStats.minutes) },
+              { label: "Mean", value: animeStats.meanScore ? String(animeStats.meanScore) : "–" },
+            ]}
+          />
+          <StatBox
+            title="Manga"
+            href={`/user/${user.username}/stats?type=manga`}
+            items={[
+              { label: "Chapters", value: formatNumber(mangaStats.episodes) },
+              { label: "Days", value: formatDays(mangaStats.minutes) },
+              { label: "Mean", value: mangaStats.meanScore ? String(mangaStats.meanScore) : "–" },
+            ]}
+          />
+          <StatBox
+            title="Books"
+            href={`/user/${user.username}/stats?type=book`}
+            items={[
+              { label: "Pages", value: formatNumber(bookStats.episodes) },
+              { label: "Days", value: formatDays(bookStats.minutes) },
+              { label: "Mean", value: bookStats.meanScore ? String(bookStats.meanScore) : "–" },
+            ]}
+          />
+          <StatBox
+            title="Music"
+            href={`/user/${user.username}/stats?type=music`}
+            items={[
+              { label: "Albums", value: formatNumber(musicStats.total) },
+              { label: "Hours", value: formatNumber(Math.round(musicStats.minutes / 60)) },
+              { label: "Mean", value: musicStats.meanScore ? String(musicStats.meanScore) : "–" },
+            ]}
+          />
+          <StatBox
+            title="Games"
+            href={`/user/${user.username}/stats?type=game`}
+            items={[
+              { label: "Games", value: formatNumber(gameStats.total) },
+              { label: "Hours", value: formatNumber(Math.round(gameStats.minutes / 60)) },
+              { label: "Mean", value: gameStats.meanScore ? String(gameStats.meanScore) : "–" },
             ]}
           />
         </section>

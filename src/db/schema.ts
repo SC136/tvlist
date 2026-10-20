@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   date,
   index,
@@ -41,6 +42,10 @@ export const user = pgTable("user", {
   // Profile customisation
   about: text("about"),
   bannerImage: text("banner_image"),
+  website: text("website"),
+  location: text("location"),
+  statusQuote: text("status_quote"),
+  defaultTab: text("default_tab").notNull().default("overview"),
   /** "auto" follows the visitor's palette; otherwise a palette id. */
   profileColor: text("profile_color").notNull().default("auto"),
   scoreFormat: scoreFormatEnum("score_format").notNull().default("POINT_10_DECIMAL"),
@@ -106,7 +111,7 @@ export const verification = pgTable(
 /*   pages and stats never need one TMDB request per row.                     */
 /* -------------------------------------------------------------------------- */
 
-export const mediaTypeEnum = pgEnum("media_type", ["movie", "tv"]);
+export const mediaTypeEnum = pgEnum("media_type", ["movie", "tv", "anime", "game", "manga", "book", "music"]);
 
 export type MediaPerson = {
   id: number;
@@ -121,7 +126,7 @@ export const media = pgTable(
   {
     id: serial("id").primaryKey(),
     type: mediaTypeEnum("type").notNull(),
-    tmdbId: integer("tmdb_id").notNull(),
+    tmdbId: bigint("tmdb_id", { mode: "number" }).notNull(),
     title: text("title").notNull(),
     originalTitle: text("original_title"),
     posterPath: text("poster_path"),
@@ -448,6 +453,11 @@ export const forumCategoryEnum = pgEnum("forum_category", [
   "GENERAL",
   "MOVIES",
   "TV",
+  "ANIME",
+  "MANGA",
+  "GAMES",
+  "BOOKS",
+  "MUSIC",
   "EPISODE_DISCUSSION",
   "RECOMMENDATIONS",
   "NEWS",
