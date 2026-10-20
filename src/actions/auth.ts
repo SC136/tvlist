@@ -4,6 +4,7 @@ import { and, eq, gt, or } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import { db, schema } from "@/db";
 import { siteUrl } from "@/lib/site";
+import { validatePasswordStrength } from "@/lib/validation";
 import type { ActionResult } from "./list";
 
 /** Request a password reset link by email or username. */
@@ -66,8 +67,9 @@ export async function resetPasswordWithToken(
   if (!token?.trim()) {
     return { ok: false, error: "Missing or invalid reset token." };
   }
-  if (!newPassword || newPassword.length < 8) {
-    return { ok: false, error: "New password must be at least 8 characters long." };
+  const pwCheck = validatePasswordStrength(newPassword);
+  if (!pwCheck.valid) {
+    return { ok: false, error: pwCheck.error ?? "Password is too simple." };
   }
 
   const cleanToken = token.trim();

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { USERNAME_PATTERN } from "@/lib/validation";
+import { USERNAME_PATTERN, validatePasswordStrength } from "@/lib/validation";
 
 type Mode = "login" | "signup";
 
@@ -32,8 +32,9 @@ export function AuthForm({ mode, providers }: { mode: Mode; providers: ("google"
           setError("Usernames are 3–20 characters: letters, numbers and underscores.");
           return;
         }
-        if (password.length < 8) {
-          setError("Password must be at least 8 characters.");
+        const pwCheck = validatePasswordStrength(password);
+        if (!pwCheck.valid) {
+          setError(pwCheck.error ?? "Password is too simple.");
           return;
         }
         if (password !== confirm) {

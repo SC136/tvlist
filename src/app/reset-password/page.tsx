@@ -6,6 +6,7 @@ import { Suspense, useState, useTransition } from "react";
 import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { resetPasswordWithToken } from "@/actions/auth";
 import { Page } from "@/components/ui/basics";
+import { validatePasswordStrength } from "@/lib/validation";
 
 export default function ResetPasswordPage() {
   return (
@@ -36,8 +37,9 @@ function ResetPasswordForm() {
       setError("No reset token found. Please check your reset link or request a new one.");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    const pwCheck = validatePasswordStrength(password);
+    if (!pwCheck.valid) {
+      setError(pwCheck.error ?? "Password is too simple.");
       return;
     }
     if (password !== confirm) {

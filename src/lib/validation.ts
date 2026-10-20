@@ -47,5 +47,69 @@ export const websiteSchema = z
   .transform((v) => (v === "" ? null : v))
   .nullish();
 
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "password1",
+  "12345678",
+  "123456789",
+  "1234567890",
+  "qwertyui",
+  "qwerty123",
+  "admin123",
+  "letmein1",
+  "iloveyou",
+  "welcome1",
+  "pass1234",
+  "guest123",
+  "abc12345",
+  "11111111",
+  "00000000",
+  "87654321",
+]);
+
+/**
+ * Validates password strength:
+ * - At least 8 characters, at most 128
+ * - Not a commonly guessed trivial password (e.g. 12345678, password, qwerty123)
+ * - Not a single repeated character (e.g. aaaaaaaa, 11111111)
+ * - Must contain at least one letter and at least one number or symbol
+ */
+export function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
+  if (!password || password.length < 8) {
+    return { valid: false, error: "Password must be at least 8 characters long." };
+  }
+  if (password.length > 128) {
+    return { valid: false, error: "Password must be at most 128 characters long." };
+  }
+  const lower = password.toLowerCase().trim();
+  if (COMMON_PASSWORDS.has(lower)) {
+    return { valid: false, error: "Password is too common and easily guessed. Please choose a stronger password." };
+  }
+  if (/^(.)\1+$/.test(password)) {
+    return { valid: false, error: "Password cannot consist of a single repeated character." };
+  }
+  if (!/[a-zA-Z]/.test(password)) {
+    return { valid: false, error: "Password must contain at least one letter." };
+  }
+  if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)) {
+    return { valid: false, error: "Password must contain at least one number or symbol." };
+  }
+  return { valid: true };
+}
+
+export const strongPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters long.")
+  .max(128, "Password must be at most 128 characters long.")
+  .superRefine((p, ctx) => {
+    const res = validatePasswordStrength(p);
+    if (!res.valid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: res.error ?? "Password is too simple.",
+      });
+    }
+  });
+
 export const textPostSchema = z.string().trim().min(1, "Write something first.").max(5000);
 export const replySchema = z.string().trim().min(1, "Write something first.").max(2000);

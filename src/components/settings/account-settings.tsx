@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/cn";
+import { validatePasswordStrength } from "@/lib/validation";
 
 export function AccountSettings({ email, hasPassword }: { email: string; hasPassword: boolean }) {
   const router = useRouter();
@@ -54,8 +55,13 @@ export function AccountSettings({ email, hasPassword }: { email: string; hasPass
             {pwMsg && <span className={cn("text-[13px] font-semibold", pwMsg.ok ? "text-green" : "text-red")}>{pwMsg.text}</span>}
             <button
               type="button"
-              disabled={pending || !current || next.length < 8}
-              onClick={() =>
+              disabled={pending || !current || !next}
+              onClick={() => {
+                const check = validatePasswordStrength(next);
+                if (!check.valid) {
+                  setPwMsg({ ok: false, text: check.error ?? "Password is too simple." });
+                  return;
+                }
                 start(async () => {
                   const { error } = await authClient.changePassword({ currentPassword: current, newPassword: next, revokeOtherSessions: true });
                   setPwMsg(error ? { ok: false, text: error.message ?? "Couldn't change password." } : { ok: true, text: "Password changed. Other sessions were signed out." });
@@ -63,8 +69,8 @@ export function AccountSettings({ email, hasPassword }: { email: string; hasPass
                     setCurrent("");
                     setNext("");
                   }
-                })
-              }
+                });
+              }}
               className="btn btn-primary px-6"
             >
               {pending && <Loader2 className="h-4 w-4 animate-spin" />}
