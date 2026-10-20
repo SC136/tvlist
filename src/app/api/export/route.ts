@@ -37,8 +37,8 @@ export async function GET() {
   ]);
 
   const data = {
-    format: "tvlist-export",
-    version: 1,
+    format: "omnilist-export",
+    version: 2,
     exportedAt: new Date().toISOString(),
     user: { username: viewer.username, about: viewer.about, scoreFormat: viewer.scoreFormat },
     list: entries.map(({ e, m }) => ({
