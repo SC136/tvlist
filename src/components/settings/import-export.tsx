@@ -56,6 +56,13 @@ function mapGenericStatus(s?: string | null): string {
   return "PLANNING";
 }
 
+function cleanDate(v?: string | null): string | null {
+  if (!v) return null;
+  const s = v.trim();
+  if (s === "0000-00-00" || s.startsWith("0000") || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  return s;
+}
+
 function letterboxdRows(text: string) {
   const [header, ...data] = parseCsv(text.replace(/^﻿/, ""));
   if (!header) return [];
@@ -67,14 +74,13 @@ function letterboxdRows(text: string) {
   const iRating = col("rating");
   const iRewatch = col("rewatch");
   if (iName < 0) throw new Error("This doesn't look like a Letterboxd export (no Name column).");
-  const date = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()) ? v.trim() : null);
   return data
     .filter((r) => r[iName]?.trim())
     .map((r) => ({
       name: r[iName].trim(),
       year: iYear >= 0 && Number(r[iYear]) ? Number(r[iYear]) : null,
-      date: date(r[iDate]),
-      watchedDate: iWatched >= 0 ? date(r[iWatched]) : null,
+      date: cleanDate(r[iDate]),
+      watchedDate: iWatched >= 0 ? cleanDate(r[iWatched]) : null,
       rating: iRating >= 0 && r[iRating] ? Number(r[iRating]) || null : null,
       rewatch: iRewatch >= 0 ? r[iRewatch]?.trim().toLowerCase() === "yes" : false,
     }));
@@ -110,6 +116,13 @@ function anilistRows(text: string) {
         const repeat = Number(e.repeat) || 0;
         const notes = typeof e.notes === "string" ? e.notes : null;
 
+        const formatAniDate = (d?: { year?: number; month?: number; day?: number } | string | null) => {
+          if (!d) return null;
+          if (typeof d === "string") return cleanDate(d);
+          if (!d.year) return null;
+          return `${d.year}-${String(d.month || 1).padStart(2, "0")}-${String(d.day || 1).padStart(2, "0")}`;
+        };
+
         return {
           mediaId,
           type,
@@ -118,6 +131,8 @@ function anilistRows(text: string) {
           score,
           progress,
           repeat,
+          startedAt: cleanDate(formatAniDate(e.startedAt as any)),
+          completedAt: cleanDate(formatAniDate(e.completedAt as any)),
           notes,
         };
       });
@@ -173,9 +188,16 @@ function malRows(text: string) {
     for (const b of blocks) {
       const type = b.toLowerCase().startsWith("<manga") ? "manga" : "anime";
       const get = (tag: string) => {
-        const m = b.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`, "i"));
-        if (!m) return "";
-        return m[1].replace(/<!\[CDATA\[/gi, "").replace(/\]\]>/gi, "").trim();
+        const open = `<${tag}>`;
+        const close = `</${tag}>`;
+        const start = b.indexOf(open);
+        const end = b.indexOf(close);
+        if (start === -1 || end === -1) return "";
+        return b
+          .slice(start + open.length, end)
+          .replace(/<!\[CDATA\[/gi, "")
+          .replace(/\]\]>/gi, "")
+          .trim();
       };
 
       const title = get("series_title");
@@ -195,8 +217,8 @@ function malRows(text: string) {
         status,
         score,
         progress,
-        startedAt: get("my_start_date") || null,
-        completedAt: get("my_finish_date") || null,
+        startedAt: cleanDate(get("my_start_date")),
+        completedAt: cleanDate(get("my_finish_date")),
       });
     }
 
