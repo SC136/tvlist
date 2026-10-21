@@ -85,7 +85,7 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (items[active]) go(items[active].href);
-      else if (query.trim()) go(`/search/movie?search=${encodeURIComponent(query.trim())}`);
+      else if (query.trim()) go(`/search?q=${encodeURIComponent(query.trim())}`);
     }
   }
 
@@ -227,23 +227,51 @@ export function QuickSearch({ open, onClose }: { open: boolean; onClose: () => v
             ),
           )}
           {query.trim() && (
-            <div className="mt-1 flex flex-wrap gap-2 border-t border-fg-grey-dark px-3 pt-3 pb-1 text-[12px]">
-              <span className="text-text-lighter">See all results in</span>
-              <Link onClick={close} className="font-semibold text-accent" href={`/search/movie?search=${encodeURIComponent(query.trim())}`}>
-                Movies
-              </Link>
-              <Link onClick={close} className="font-semibold text-accent" href={`/search/tv?search=${encodeURIComponent(query.trim())}`}>
-                TV Shows
-              </Link>
-              <Link onClick={close} className="font-semibold text-accent" href={`/search/anime?search=${encodeURIComponent(query.trim())}`}>
-                Anime
-              </Link>
-              <Link onClick={close} className="font-semibold text-accent" href={`/search/game?search=${encodeURIComponent(query.trim())}`}>
-                Games
-              </Link>
-              <Link onClick={close} className="font-semibold text-accent" href={`/search/people?search=${encodeURIComponent(query.trim())}`}>
-                People
-              </Link>
+            <div className="mt-2 space-y-2 border-t border-fg-grey-dark px-3 pt-3 pb-1 text-[12px]">
+              <div className="flex items-center justify-between">
+                <Link
+                  onClick={close}
+                  className="font-bold text-accent hover:underline"
+                  href={`/search?q=${encodeURIComponent(query.trim())}`}
+                >
+                  View all results for &ldquo;{query.trim()}&rdquo; &rarr;
+                </Link>
+                <span className="text-[11px] text-text-lighter hidden sm:inline">Press Enter to search all</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-text-lighter">
+                <span>Filter by:</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=movie`}>
+                  Movies
+                </Link>
+                <span>&middot;</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=tv`}>
+                  TV
+                </Link>
+                <span>&middot;</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=anime`}>
+                  Anime
+                </Link>
+                <span>&middot;</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=manga`}>
+                  Manga
+                </Link>
+                <span>&middot;</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=book`}>
+                  Books
+                </Link>
+                <span>&middot;</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=music`}>
+                  Music
+                </Link>
+                <span>&middot;</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=game`}>
+                  Games
+                </Link>
+                <span>&middot;</span>
+                <Link onClick={close} className="font-semibold text-text-light hover:text-accent" href={`/search?q=${encodeURIComponent(query.trim())}&category=people`}>
+                  People
+                </Link>
+              </div>
             </div>
           )}
         </div>

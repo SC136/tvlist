@@ -159,6 +159,23 @@ function toPaged<T extends TmdbMovieListItem | TmdbTvListItem>(data: TmdbPaged<T
   };
 }
 
+function filterAndSync(
+  paged: Paged<MediaSummary>,
+  totalPages: number,
+  filterFn: (item: MediaSummary) => boolean,
+) {
+  const before = paged.results.length;
+  paged.results = paged.results.filter(filterFn);
+  const removed = before - paged.results.length;
+  if (totalPages <= 1) {
+    paged.totalResults = paged.results.length;
+    paged.totalPages = paged.results.length > 0 ? 1 : 0;
+  } else if (removed > 0) {
+    paged.totalResults = Math.max(paged.results.length, paged.totalResults - removed);
+    paged.totalPages = Math.max(1, Math.ceil(paged.totalResults / 20));
+  }
+}
+
 /* ------------------------------------------------------------------------- */
 /*                                   Lists                                   */
 /* ------------------------------------------------------------------------- */
@@ -170,7 +187,7 @@ export async function getTrending(type: MediaCategory | "all", window: "day" | "
   const data = await tmdb<TmdbPaged<TmdbMovieListItem | TmdbTvListItem>>(`/trending/${type}/${window}`, { page }, 3600);
   const paged = toPaged(data, type === "all" ? undefined : type);
   if (type === "tv" || type === "movie") {
-    paged.results = paged.results.filter((item) => !isAnimeMedia(item));
+    filterAndSync(paged, data.total_pages, (item) => !isAnimeMedia(item));
   }
   return paged;
 }
@@ -214,7 +231,7 @@ export async function getCuratedList(type: MediaType, list: CuratedList, page = 
   const data = await tmdb<TmdbPaged<TmdbMovieListItem | TmdbTvListItem>>(`/${type}/${list}`, { page, region: list === "upcoming" || list === "now_playing" ? "US" : undefined }, 3600);
   const paged = toPaged(data, type);
   if (type === "tv" || type === "movie") {
-    paged.results = paged.results.filter((item) => !isAnimeMedia(item));
+    filterAndSync(paged, data.total_pages, (item) => !isAnimeMedia(item));
   }
   return paged;
 }
@@ -312,10 +329,10 @@ export async function discover(type: MediaCategory, filters: BrowseFilters, page
     // Search can't filter by genre server-side; narrow the page we got.
     if (filters.genres?.length) {
       const names = filters.genres.map((g) => genreMap(type)[g]);
-      paged.results = paged.results.filter((r) => names.every((n) => r.genres.includes(n)));
+      filterAndSync(paged, data.total_pages, (r) => names.every((n) => r.genres.includes(n)));
     }
     if (type === "tv" || type === "movie") {
-      paged.results = paged.results.filter((item) => !isAnimeMedia(item));
+      filterAndSync(paged, data.total_pages, (item) => !isAnimeMedia(item));
     }
     return paged;
   }
@@ -357,7 +374,7 @@ export async function discover(type: MediaCategory, filters: BrowseFilters, page
   const data = await tmdb<TmdbPaged<TmdbMovieListItem | TmdbTvListItem>>(`/discover/${type}`, params, 3600);
   const paged = toPaged(data, type);
   if (type === "tv" || type === "movie") {
-    paged.results = paged.results.filter((item) => !isAnimeMedia(item));
+    filterAndSync(paged, data.total_pages, (item) => !isAnimeMedia(item));
   }
   return paged;
 }
@@ -389,9 +406,28 @@ export async function searchAll(query: string) {
     }
   }
   return {
-    movies: media.filter((m) => m.type === "movie"),
-    tv: media.filter((m) => m.type === "tv"),
+    movies: media.filter((m) => m.type === "movie" && !isAnimeMedia(m)),
+    tv: media.filter((m) => m.type === "tv" && !isAnimeMedia(m)),
     people,
+  };
+}
+
+export async function searchTmdbAnime(query: string, page = 1): Promise<Paged<MediaSummary>> {
+  const data = await tmdb<TmdbPaged<TmdbMultiItem>>("/search/multi", { query, page, include_adult: false }, 600);
+  const results: MediaSummary[] = [];
+  for (const item of data.results) {
+    if (item.media_type === "movie" || item.media_type === "tv") {
+      const summary = toSummary(item as TmdbMovieListItem | TmdbTvListItem);
+      if (isAnimeMedia(summary)) {
+        results.push({ ...summary, type: "anime" });
+      }
+    }
+  }
+  return {
+    page: data.page,
+    totalPages: data.total_pages <= 1 ? (results.length > 0 ? 1 : 0) : data.total_pages,
+    totalResults: data.total_pages <= 1 ? results.length : results.length,
+    results,
   };
 }
 
