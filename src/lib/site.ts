@@ -22,6 +22,8 @@ export function trustedOrigins(): string[] {
   for (const host of [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]) {
     if (host) origins.add(`https://${host}`);
   }
+  // Vercel assigns several aliases per project (omnilist-<hash>.vercel.app, omnilist-sc136.vercel.app, ...).
+  if (process.env.VERCEL) origins.add("https://omnilist-*.vercel.app");
   if (process.env.NODE_ENV !== "production") origins.add("http://localhost:3000");
   return [...origins];
 }
