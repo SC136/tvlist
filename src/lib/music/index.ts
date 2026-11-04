@@ -77,7 +77,7 @@ export async function searchMusic(query: string, page = 1): Promise<Paged<MediaS
   }
 }
 
-export async function getTrendingMusic(page = 1): Promise<Paged<MediaSummary>> {
+export async function getTrendingMusic(_page = 1): Promise<Paged<MediaSummary>> {
   try {
     const res = await fetch(`${ITUNES_API}/us/rss/topalbums/limit=25/json`, {
       headers: { Accept: "application/json" },

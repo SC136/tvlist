@@ -116,7 +116,8 @@ function anilistRows(text: string) {
         const repeat = Number(e.repeat) || 0;
         const notes = typeof e.notes === "string" ? e.notes : null;
 
-        const formatAniDate = (d?: { year?: number; month?: number; day?: number } | string | null) => {
+        type AniDate = { year?: number; month?: number; day?: number } | string | null | undefined;
+        const formatAniDate = (d?: AniDate) => {
           if (!d) return null;
           if (typeof d === "string") return cleanDate(d);
           if (!d.year) return null;
@@ -131,8 +132,8 @@ function anilistRows(text: string) {
           score,
           progress,
           repeat,
-          startedAt: cleanDate(formatAniDate(e.startedAt as any)),
-          completedAt: cleanDate(formatAniDate(e.completedAt as any)),
+          startedAt: cleanDate(formatAniDate(e.startedAt as AniDate)),
+          completedAt: cleanDate(formatAniDate(e.completedAt as AniDate)),
           notes,
         };
       });

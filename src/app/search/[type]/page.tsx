@@ -31,7 +31,7 @@ import {
   searchManga,
 } from "@/lib/anilist";
 import { getNewGames, getTopRatedGames, getTrendingGames, searchGames } from "@/lib/games";
-import { getBooksBySubject, getTopRatedBooks, getTrendingBooks, searchBooks } from "@/lib/books";
+import { getBooksBySubject, getTrendingBooks, searchBooks } from "@/lib/books";
 import { getTopRatedMusic, getTrendingMusic, searchMusic } from "@/lib/music";
 import {
   CATEGORY_LABEL,

@@ -81,7 +81,7 @@ export async function searchBooks(query: string, page = 1): Promise<Paged<MediaS
   }
 }
 
-export async function getTrendingBooks(page = 1): Promise<Paged<MediaSummary>> {
+export async function getTrendingBooks(_page = 1): Promise<Paged<MediaSummary>> {
   try {
     const res = await fetch(`${OL_API}/trending/weekly.json?limit=24`, {
       headers: { Accept: "application/json" },

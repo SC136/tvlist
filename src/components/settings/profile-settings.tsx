@@ -8,7 +8,7 @@ import {
   Check,
   Eye,
   Globe,
-  Image as ImageIcon,
+
   Italic,
   Link2,
   Loader2,

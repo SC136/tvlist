@@ -9,10 +9,7 @@ import {
   Gamepad2,
   Music,
   Sparkles,
-  TrendingUp,
   Tv,
-  User,
-  Users,
 } from "lucide-react";
 import { db, schema } from "@/db";
 import { MediaCard, MediaGrid } from "@/components/media/media-card";
@@ -453,7 +450,7 @@ function renderCategorySection(
     games: Paged<MediaSummary>;
     people: { page: number; totalPages: number; totalResults: number; results: { id: number; name: string; profilePath: string | null; department: string | null }[] };
     users: { id: string; username: string | null; name: string | null; image: string | null; about: string | null }[];
-    statuses: Record<string, any>;
+    statuses: Awaited<ReturnType<typeof getStatusesFor>>;
   },
 ) {
   const { q, page, statuses } = ctx;

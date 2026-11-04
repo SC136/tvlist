@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import {
   BookOpen,
   BookText,
@@ -35,13 +35,14 @@ export function UniversalSearchBar({
   categories: CategoryTab[];
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [query, setQuery] = useState(initialQuery);
+  const [prevInitial, setPrevInitial] = useState(initialQuery);
   const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
+  if (prevInitial !== initialQuery) {
+    setPrevInitial(initialQuery);
     setQuery(initialQuery);
-  }, [initialQuery]);
+  }
 
   const updateSearch = (newQuery: string, newCat = activeCategory) => {
     const q = newQuery.trim();
